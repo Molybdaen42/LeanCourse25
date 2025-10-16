@@ -187,11 +187,11 @@ In the case of ←, you can type it by typing "\l ", so backslash-l-space.
 -/
 
 example (a b c d : ℝ) (h : a = b + b) (h' : b = c) (h'' : a = d) : b + c = d := by
-  sorry
+  rw [← h'', h, h']
   done
 
 example (a b c d : ℝ) (h : a*d - 1 = c) (h' : a*d = b) : c = b - 1 := by
-  sorry
+  rw [← h, h']
   done
 
 /- ## Rewriting in a local assumption
@@ -235,9 +235,9 @@ example (a b c : ℝ) (h : a = b + c) : exp (2 * a) = (exp b) ^ 2 * (exp c) ^ 2 
   calc
     exp (2 * a) = exp (2 * (b + c))                 := by rw [h]
               _ = exp ((b + b) + (c + c))           := by ring_nf
-              _ = exp (b + b) * exp (c + c)         := by sorry
-              _ = (exp b * exp b) * (exp c * exp c) := by sorry
-              _ = (exp b) ^ 2 * (exp c)^2           := by sorry
+              _ = exp (b + b) * exp (c + c)         := by rw [exp_add]
+              _ = (exp b * exp b) * (exp c * exp c) := by rw [exp_add, exp_add]
+              _ = (exp b) ^ 2 * (exp c)^2           := by ring
 
 /-
 From a practical point of view, when writing such a proof, it is sometimes convenient to:
@@ -252,7 +252,10 @@ Aligning the equal signs and `:=` signs is not necessary but looks tidy.
 
 /- Prove the following using a `calc` block. -/
 example (a b c d : ℝ) (h : c = a * d + b) (h' : b = a*d) : c = 2*d*a := by
-  sorry
+  calc
+    c = a*d + b   := by exact h
+    _ = a*d + a*d := by rw [h']
+    _ = 2 * d * a := by ring
   done
 
 
