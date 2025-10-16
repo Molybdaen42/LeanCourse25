@@ -233,8 +233,8 @@ Let's do some exercises using `calc`. Feel free to use `ring` in some steps.
 
 example (a b c : ℝ) (h : a = b + c) : exp (2 * a) = (exp b) ^ 2 * (exp c) ^ 2 := by
   calc
-    exp (2 * a) = exp (2 * (b + c))                 := by sorry
-              _ = exp ((b + b) + (c + c))           := by sorry
+    exp (2 * a) = exp (2 * (b + c))                 := by rw [h]
+              _ = exp ((b + b) + (c + c))           := by ring_nf
               _ = exp (b + b) * exp (c + c)         := by sorry
               _ = (exp b * exp b) * (exp c * exp c) := by sorry
               _ = (exp b) ^ 2 * (exp c)^2           := by sorry
