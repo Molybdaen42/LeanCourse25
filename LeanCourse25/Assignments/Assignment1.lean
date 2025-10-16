@@ -128,8 +128,7 @@ right-hand side.
 -/
 
 example (a b c : ℝ) : exp (a + b - c) = (exp a * exp b) / (exp c * exp 0) := by
-  sorry
-  done
+  rw [exp_sub , exp_add, exp_zero, mul_one]
 
 
 /- Prove the following equality just by using `rw`.
@@ -139,8 +138,7 @@ The two lemmas below express the associativity and commutativity of multiplicati
 #check (mul_comm : ∀ a b : ℝ, a * b = b * a)
 
 example (a b c : ℝ) : a * b * c = b * (a * c) := by
-  sorry
-  done
+  rw [mul_comm a b, mul_assoc]
 
 
 
@@ -163,8 +161,8 @@ variable {G : Type*} [Group G] (g h : G)
 #check inv_inv g
 
 lemma inverse_of_a_commutator : ⁅g, h⁆⁻¹ = ⁅h, g⁆ := by
-  sorry
-  done
+  rw [commutatorElement_def, commutatorElement_def, mul_inv_rev, mul_inv_rev, mul_inv_rev, inv_inv]
+  rw [inv_inv, ← mul_assoc, ← mul_assoc]
 
 end
 
