@@ -263,7 +263,12 @@ example (a b c d : ℝ) (h : c = a * d + b) (h' : b = a*d) : c = 2*d*a := by
 /- Prove the following using a `calc` block. -/
 
 example (a b c d : ℝ) : a + b + c + d = d + (b + a) + c := by
-  sorry
+  calc
+    a+b+c+d = a+(b+(c+d)) := by rw [add_assoc, add_assoc]
+    _       = a+(b+(d+c)) := by rw [add_comm c d]
+    _       = a+b+d+c     := by rw [add_assoc, add_assoc]
+    _       = b+a+d+c     := by rw [add_comm a b]
+    _       = d+(b+a)+c   := by rw [add_comm (b+a) d]
   done
 
 /- Prove the following using a `calc` block. -/
@@ -271,7 +276,12 @@ example (a b c d : ℝ) : a + b + c + d = d + (b + a) + c := by
 #check sub_self
 
 example (a b c d : ℝ) (h : c + a = b*a - d) (h' : d = a * b) : a + c = 0 := by
-  sorry
+  calc
+    a+c = c+a     := by rw [add_comm]
+    _   = b*a - d := by rw [h]
+    _   = a*b - d := by rw [mul_comm]
+    _   = d - d   := by rw [← h']
+    _  = 0        := by rw [sub_self]
   done
 
 
@@ -294,7 +304,13 @@ variable (R : Type*) [Ring R]
 /- Use `calc` to prove the following from the axioms of rings, without using `ring`. -/
 
 example {a b c : R} (h : a + b = a + c) : b = c := by
-  sorry
+  calc
+    b = 0 + b         := by rw [zero_add]
+    _ = -a + a + b    := by rw [neg_add_cancel]
+    _ = -a + (a + b)  := by rw [add_assoc]
+    _ = -a + (a + c)  := by rw [h]
+    _ = -a + a + c    := by rw [add_assoc]
+    _ = c             := by rw [neg_add_cancel, zero_add]
   done
 
 end
@@ -331,14 +347,21 @@ variable (a b c x : ℝ)
 #check (zero_add a      : 0 + a = a)
 
 example : (a + b) * (a - b) = a^2 - b^2 := by
-  sorry
+  -- write .^2 as .*.
+  rw [pow_two, pow_two]
+  -- use distributivity
+  rw [add_mul, mul_sub, mul_sub]
+  -- use commutativity and associativity
+  rw [add_sub, mul_comm a b, sub_add]
+  -- cancel b*a - b*a
+  rw [sub_self, sub_zero]
   done
 
 
 -- Now redo it with `ring`.
 
 example : (a + b) * (a - b) = a^2 - b^2 := by
-  sorry
+  ring
   done
 
 end
