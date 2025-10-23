@@ -278,14 +278,19 @@ with the title `Fermat's Little Theorem in ℤ/pℤ`.
 
 -- Use `rw??` to find the following theorem in mathlib.
 example (p : ℕ) [hp: Fact (Nat.Prime p)] (k : ZMod p) (hk : k ≠ 0) : k ^ (p - 1) = 1 := by
-  sorry
-  done
+  exact ZMod.pow_card_sub_one_eq_one hk
 
 -- Prove the following.
 example (p : ℕ) [Fact (Nat.Prime p)] :
     (fun k ↦ k ^ p + 2 * k ^ (2 * (p - 1) + 1) : ZMod p → ZMod p) = (fun k ↦ 3 * k) := by
-  sorry
-  done
+  ext k
+
+  by_cases hk : k = 0
+  · simp [hk]
+  · -- if k ≠ 0, we can use Fermat's Little Theorem in ℤ/pℤ
+    simp [pow_add, pow_mul', ZMod.pow_card_sub_one_eq_one hk]
+    ring
+
 
 -- Prove the following.
 example (p : ℕ) [Fact (Nat.Prime p)] (k : ZMod p) : k ^ (3 * (p - 1) + 1) = k := by
