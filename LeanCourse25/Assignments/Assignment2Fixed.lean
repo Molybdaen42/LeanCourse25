@@ -15,45 +15,75 @@ open Real Function Set Nat
 /-! # Exercises to practice. -/
 
 example (p q r s : Prop) (h : p ∧ q → r) (hp : p) (h' : q → s) : q → r ∧ s := by
-  sorry
-  done
+  intro hq
+  constructor
+  apply h
+  constructor
+  exact hp
+  exact hq
+  apply h'
+  exact hq
 
 example {α : Type*} {p q : α → Prop} (h : ∀ x, p x → q x) :
     (∃ x, p x) → (∃ x, q x) := by
-  sorry
-  done
+  intro h'
+  obtain ⟨x, hx⟩  := h'
+  use x
+  specialize h x hx
+  exact h
 
 -- Exercise: prove this by contraposition.
 example : 2 ≠ 4 → 1 ≠ 2 := by
-  sorry
-  done
+  contrapose
+  simp
 
 /- Prove the following with basic tactics,
 in particular without using `tauto`, `grind` or lemmas from Mathlib. -/
 example {α : Type*} {p : α → Prop} {r : Prop} :
     ((∃ x, p x) → r) ↔ (∀ x, p x → r) := by
-  sorry
-  done
+  constructor
+  · intro h x hpx
+    apply h
+    use x
+  · intro h ⟨x,hpx⟩
+    exact h x hpx
 
 /- Prove the following with basic tactics,
 in particular without using `tauto`, `grind` or lemmas from Mathlib. -/
 example {α : Type*} {p : α → Prop} {r : Prop} :
     (∃ x, p x ∧ r) ↔ ((∃ x, p x) ∧ r) := by
-  sorry
-  done
+  constructor
+  · intro ⟨x, hx, hr⟩
+    constructor
+    use x
+    assumption
+  · intro ⟨⟨x,hpx⟩,hr⟩
+    use x
 
 /- Prove the following without using `push_neg` or lemmas from Mathlib.
 You will need to use `by_contra` in the proof. -/
 example {α : Type*} (p : α → Prop) : (∃ x, p x) ↔ (¬ ∀ x, ¬ p x) := by
-  sorry
-  done
+  constructor
+  · intro ⟨x,hx⟩
+    by_contra h
+    exact h x hx
+  · intro h
+    by_contra h'
+    apply h
+    intro x hpx
+    apply h'
+    use x
 
 def SequentialLimit (u : ℕ → ℝ) (l : ℝ) : Prop :=
   ∀ ε > 0, ∃ N, ∀ n ≥ N, |u n - l| < ε
 
 example (a : ℝ) : SequentialLimit (fun n : ℕ ↦ a) a := by
-  sorry
-  done
+  unfold SequentialLimit
+  intro ε hε
+  use 0
+  intro n hn
+  simp
+  assumption
 
 /-
 `(n)!` denotes the factorial function on the natural numbers.
@@ -62,25 +92,35 @@ Use `calc` to prove this.
 You can use `exact?` to find lemmas from the library,
 such as the fact that factorial is monotone. -/
 example (n m k : ℕ) (h : n ≤ m) : (n)! ∣ (m + 1)! := by
-  sorry
-  done
+  apply factorial_dvd_factorial
+  linarith
 
 example (a b c x y : ℝ) (h : a ≤ b) (h2 : b < c) (h3 : x ≤ y) :
     a + exp x ≤ c + exp (y + 2) := by
-  sorry
-  done
+  have h' : exp x ≤ exp (y+2) := by
+    rw [exp_le_exp]
+    linarith
+  linarith
 
 -- Use `rw?` or `rw??` to help you in the following calculation.
 -- Alternatively, write out a calc block by hand.
 example {G : Type*} [Group G] {a b c d : G}
     (h : a⁻¹ * b * c * c⁻¹ * a * b⁻¹ * a * a⁻¹ = b) (h' : b * c = c * b) : b = 1 := by
+  -- Joachim's first try
+  simp at h
+  rw [← h]
+  -- ????
   sorry
+
 
 /-- Prove the following using `linarith`.
 Note that `linarith` cannot deal with implication or if and only if statements. -/
 example (a b c : ℝ) : a + b ≤ c ↔ a ≤ c - b := by
-  sorry
-  done
+  constructor
+  · intro h
+    linarith
+  · intro h
+    linarith
 
 
 /- You can prove many equalities and inequalities by being smart with calculations.
@@ -112,12 +152,16 @@ example {a₁ a₂ b₁ b₂ c₁ c₂ : ℝ} (hab : a₁ + a₂ = b₁ + b₂) 
 
 
 example {m n : ℤ} : n - m ^ 2 ≤ n + 3 := by
-  sorry
-  done
+  have : -m^2 ≤ 0 := by
+    simp
+    exact sq_nonneg m
+  linarith
+
 
 example {a : ℝ} (h : ∀ b : ℝ, a ≥ -3 + 4 * b - b ^ 2) : a ≥ 1 := by
-  sorry
-  done
+  specialize h 2
+  norm_num at h
+  assumption
 
 
 
@@ -136,8 +180,18 @@ def Continuous' (f : ℝ → ℝ) := ∀ x, ContinuousAtPoint f x
 -- Exercise for you. Remember that you can use `unfold` to expand a definition.
 example (f g : ℝ → ℝ) (hfg : ∀ x, ContinuousAtPoint f x ↔ ContinuousAtPoint g x) :
     Continuous' f ↔ Continuous' g := by
-  sorry
-  done
+  unfold Continuous'
+  constructor
+  · intro h x
+    specialize hfg x
+    specialize h x
+    rw[← hfg]
+    exact h
+  intro h x
+  specialize hfg x
+  specialize h x
+  rw[hfg]
+  exact h
 
 def All (p : ℝ → Prop) := ∀ x, p x
 
@@ -153,13 +207,46 @@ example (p q : ℝ → Prop) (h : ∀ x, p x ↔ q x) :
 -- Is the following true? If yes, prove it in Lean.
 -- If not, give a counterexample and prove it. (What do you have to do to do so?)
 example (p q : ℕ → Prop) (h: (∃ x, p x) ↔ (∃ x, q x)) : ∀ x, p x ↔ q x := by
+  -- It's not true. A counterexample is: p(n) = true iff n=0 and q(n) = true iff n=1.
   sorry
+example : ¬∀ (p q : ℕ → Prop), ((h: (∃ x, p x) ↔ (∃ x, q x)) → ∀ x, p x ↔ q x) := by
+  -- define some counterexamples p and q
+  let p : ℕ → Prop := fun n => (n=0)
+  let q : ℕ → Prop := fun n => (n=1)
+  push_neg
+  use p
+  use q
+
+  constructor
+  · -- show that (∃ x, p x) ↔ ∃ x, q x
+    -- it's trivial since both sides are true
+    have hp : ∃ x, p x := by use 0
+    have hq : ∃ x, q x := by use 1
+    simp [hp, hq]
+  · -- show that ∃ x, p x ∧ ¬q x ∨ ¬p x ∧ q x
+    use 0
+    simp [p,q]
 
 /- Prove the following with basic tactics, without using `tauto` or lemmas from Mathlib. -/
 lemma exists_distributes_over_or {α : Type*} {p q : α → Prop} :
     (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := by
-  sorry
-  done
+  constructor
+  · intro h
+    obtain ⟨ x, hp | hq⟩ := h
+    · left
+      use x
+    · right
+      use x
+  · intro h
+    obtain  hp| hq := h
+    · obtain ⟨ x ,hx⟩ := hp
+      use x
+      left
+      exact hx
+    · obtain ⟨ x, hx⟩ := hq
+      use x
+      right
+      exact hx
 
 end Logic
 
@@ -177,12 +264,17 @@ section Functions
 -- Use `exact?`, `apply?` or `rw??` to find this theorem in mathlib.
 -- Describe what you are doing.
 example (p : ℕ) [hp: Fact (Nat.Prime p)] (x : ZMod p) : x ^ p = x := by
-  sorry
-  done
+  -- using `exact?`, we get
+  exact ZMod.pow_card x
 
 -- The above theorem has a name. What is it?
 -- Use this name to find the same result using leansearch.net.
 -- Describe every step you're performing.
+/--
+Typing `(x : ZMod p) : x ^ p = x` intro `leansearch.net` yields an exact match at second position
+(at first position in the output was `Generalized Fermat's Little Theorem in ℤ/pℤ`)
+with the title `Fermat's Little Theorem in ℤ/pℤ`.
+-/
 
 -- Use `rw??` to find the following theorem in mathlib.
 example (p : ℕ) [hp: Fact (Nat.Prime p)] (k : ZMod p) (hk : k ≠ 0) : k ^ (p - 1) = 1 := by
