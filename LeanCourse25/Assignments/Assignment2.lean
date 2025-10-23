@@ -13,18 +13,27 @@ open Real Function Set Nat
 /-! # Exercises to practice. -/
 
 example (p q r s : Prop) (h : p ∧ q → r) (hp : p) (h' : q → s) : q → r ∧ s := by
-  sorry
-  done
+  intro hq
+  constructor
+  apply h
+  constructor
+  exact hp
+  exact hq
+  apply h'
+  exact hq
 
 example {α : Type*} {p q : α → Prop} (h : ∀ x, p x → q x) :
     (∃ x, p x) → (∃ x, q x) := by
-  sorry
-  done
+  intro h'
+  obtain ⟨x, hx⟩  := h'
+  use x
+  specialize h x hx
+  exact h
 
 -- Exercise: prove this by contraposition.
 example : 2 ≠ 4 → 1 ≠ 2 := by
-  sorry
-  done
+  contrapose
+  simp
 
 /- Prove the following with basic tactics,
 in particular without using `tauto`, `grind` or lemmas from Mathlib. -/
@@ -134,8 +143,18 @@ def Continuous' (f : ℝ → ℝ) := ∀ x, ContinuousAtPoint f x
 -- Exercise for you. Remember that you can use `unfold` to expand a definition.
 example (f g : ℝ → ℝ) (hfg : ∀ x, ContinuousAtPoint f x ↔ ContinuousAtPoint g x) :
     Continuous' f ↔ Continuous' g := by
-  sorry
-  done
+  unfold Continuous'
+  constructor
+  · intro h x
+    specialize hfg x
+    specialize h x
+    rw[← hfg]
+    exact h
+  intro h x
+  specialize hfg x
+  specialize h x
+  rw[hfg]
+  exact h
 
 def All (p : ℝ → Prop) := ∀ x, p x
 
@@ -152,12 +171,28 @@ example (p q : ℝ → Prop) (h : ∀ x, p x ↔ q x) :
 -- If not, give a counterexample and prove it. (What do you have to do to do so?)
 example (p q : ℕ → Prop) (h: (∃ x, p x) ↔ (∃ x, q x)) : ∀ x, p x ↔ q x := by
   sorry
+--not true, take the following example ToDO
 
 /- Prove the following with basic tactics, without using `tauto` or lemmas from Mathlib. -/
 lemma exists_distributes_over_or {α : Type*} {p q : α → Prop} :
     (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := by
-  sorry
-  done
+  constructor
+  · intro h
+    obtain ⟨ x, hp | hq⟩ := h
+    · left
+      use x
+    · right
+      use x
+  · intro h
+    obtain  hp| hq := h
+    · obtain ⟨ x ,hx⟩ := hp
+      use x
+      left
+      exact hx
+    · obtain ⟨ x, hx⟩ := hq
+      use x
+      right
+      exact hx
 
 end Logic
 
