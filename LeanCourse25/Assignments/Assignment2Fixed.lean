@@ -106,7 +106,7 @@ example (a b c x y : ℝ) (h : a ≤ b) (h2 : b < c) (h3 : x ≤ y) :
 -- Alternatively, write out a calc block by hand.
 example {G : Type*} [Group G] {a b c d : G}
     (h : a⁻¹ * b * c * c⁻¹ * a * b⁻¹ * a * a⁻¹ = b) (h' : b * c = c * b) : b = 1 := by
-  -- Joachim's first try
+  -- first try
   simp at h
   rw [← h]
   -- ????
@@ -258,7 +258,8 @@ section Functions
 #check Nat.Prime
 
 -- The following theorem is the key ingredient to it.
--- (You have not seen the syntax `[hp: Fact (Nat.Prime p)]` yet: this is related to implicit arguments.
+-- (You have not seen the syntax `[hp: Fact (Nat.Prime p)]` yet: this is related to implicit
+-- arguments.
 --  You can assume it says `(hp: Nat.Prime p)`. We will discuss the precise difference later.)
 --
 -- Use `exact?`, `apply?` or `rw??` to find this theorem in mathlib.
@@ -294,12 +295,17 @@ example (p : ℕ) [Fact (Nat.Prime p)] :
 
 -- Prove the following.
 example (p : ℕ) [Fact (Nat.Prime p)] (k : ZMod p) : k ^ (3 * (p - 1) + 1) = k := by
-  sorry
-  done
+  by_cases hk : k = 0
+  · simp [hk]
+  · -- if k ≠ 0, we can use Fermat's Little Theorem in ℤ/pℤ
+    simp [pow_add, pow_mul', ZMod.pow_card_sub_one_eq_one hk]
+
 
 example (p : ℕ) [Fact (Nat.Prime p)] (k : ZMod p) : k ^ (5 * (p - 1) + 1) = k := by
-  sorry
-  done
+  by_cases hk : k = 0
+  · simp [hk]
+  · -- if k ≠ 0, we can use Fermat's Little Theorem in ℤ/pℤ
+    simp [pow_add, pow_mul', ZMod.pow_card_sub_one_eq_one hk]
 
 end Functions
 
@@ -308,19 +314,58 @@ end Functions
 lemma sequentialLimit_add {s t : ℕ → ℝ} {a b : ℝ}
       (hs : SequentialLimit s a) (ht : SequentialLimit t b) :
     SequentialLimit (fun n ↦ s n + t n) (a + b) := by
-  sorry
-  done
+  unfold SequentialLimit at hs ht ⊢
+  intro ε hε
+
+  -- divide ε in half
+  obtain ⟨Ns,hNs⟩ := hs (ε/2) (half_pos hε)
+  obtain ⟨Nt,hNt⟩ := ht (ε/2) (half_pos hε)
+  use max Ns Nt
+
+  intro n hn
+  specialize hNs n (le_of_max_le_left hn)
+  specialize hNt n (le_of_max_le_right hn)
+
+  calc
+    |s n + t n - (a + b)| = |s n - a + (t n - b)| := by ring_nf
+                        _ ≤ |s n - a| + |t n - b| := by apply abs_add_le
+                        _ < ε                     := by linarith
+
 
 /- It may be useful to case split on whether `c = 0` is true. -/
 lemma sequentialLimit_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ) (hs : SequentialLimit s a) :
     SequentialLimit (fun n ↦ c * s n) (c * a) := by
-  sorry
-  done
+  -- wlog c ≠ 0
+  by_cases hc : c = 0
+  · intro ε hε
+    use 0
+    simp [hc, hε]
+  have hc_pos : |c| > 0 := by exact abs_pos.mpr hc
+  have hc_nonzero : |c| ≠ 0 := by exact abs_ne_zero.mpr hc
+
+  intro ε hε
+  -- divide ε by |c|
+  obtain ⟨Ns,hNs⟩ := hs (ε/|c|) (div_pos hε hc_pos)
+  use Ns
+  intro n hn
+
+  calc
+    |c * s n - c* a| = |c * (s n - a)| := by rw [mul_sub]
+                   _ = |c| * |s n - a| := by exact abs_mul c (s n - a)
+                   _ < |c| * (ε / |c|) := by exact (mul_lt_mul_iff_right₀ hc_pos).mpr (hNs n hn)
+                   _ = ε               := by exact mul_div_cancel₀ ε hc_nonzero
+
+
 
 /-- Prove this using a calculation. -/
 lemma exercise_square {m n k : ℤ} (h : m ^ 2 + n ≤ 2) : n + 1 ≤ 3 + k ^ 2 := by
-  sorry
-  done
+  have hm : m^2 ≥ 0 := sq_nonneg m
+  have hk : k^2 ≥ 0 := sq_nonneg k
+  have hn : n ≤ 2 := le_of_add_le_of_nonneg_right h hm
+  calc
+    n + 1 ≤ 2 + 1   := by exact (add_le_add_iff_right 1).mpr hn
+        _ = 3       := by norm_num
+        _ ≤ 3 + k^2 := by exact le_add_of_nonneg_right hk
 
 
 section Growth
@@ -340,21 +385,47 @@ def EventuallyGrowsFaster (s t : ℕ → ℕ) : Prop :=
 /- show that `n * s n` grows (eventually) faster than `s n`. -/
 lemma eventuallyGrowsFaster_mul_left :
     EventuallyGrowsFaster (fun n ↦ n * s n) s := by
-  sorry
-  done
+  intro k
+  use k
+  intro n hn
+  simp
+  exact mul_le_mul_right (s n) hn
+
 
 /- Show that if `sᵢ` grows eventually faster than `tᵢ` then
 `s₁ + s₂` grows eventually faster than `t₁ + t₂`. -/
 lemma eventuallyGrowsFaster_add {s₁ s₂ t₁ t₂ : ℕ → ℕ}
     (h₁ : EventuallyGrowsFaster s₁ t₁) (h₂ : EventuallyGrowsFaster s₂ t₂) :
     EventuallyGrowsFaster (s₁ + s₂) (t₁ + t₂) := by
-  sorry
-  done
+  intro k
+  obtain ⟨N₁, hN₁⟩ := h₁ k
+  obtain ⟨N₂, hN₂⟩ := h₂ k
+  use max N₁ N₂
+
+  intro n hn
+  specialize hN₁ n (le_of_max_le_left hn)
+  specialize hN₂ n (le_of_max_le_right hn)
+  simp
+  linarith
+
 
 /- Find a positive function that grows faster than itself when shifted by one. -/
 lemma eventuallyGrowsFaster_shift : ∃ (s : ℕ → ℕ),
     EventuallyGrowsFaster (fun n ↦ s (n+1)) s ∧ ∀ n, s n ≠ 0 := by
-  sorry
-  done
+  use fun n ↦ n^n
+  simp
+
+  intro k
+  simp
+  use k
+  intro n hn
+  rw [pow_add_one']
+
+  have hn_pow_n : n^n ≤ (n+1)^n := by
+    exact Nat.pow_le_pow_left (le_add_right n 1) n
+  have hk_n_plus_one : k ≤ n+1 := by linarith
+  calc
+    k * n^n ≤ (n+1) * n^n       := by exact mul_le_mul_right (n^n) hk_n_plus_one
+          _ ≤ (n+1) * (n + 1)^n := by exact mul_le_mul_left (n+1) hn_pow_n
 
 end Growth
