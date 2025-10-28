@@ -12,15 +12,21 @@ def FnLb (f : ℝ → ℝ) (a : ℝ) : Prop :=
 
 variable (f g : ℝ → ℝ) (a b : ℝ)
 
-example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
-  sorry
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) := by
+  unfold FnLb
+  intro x
+  exact add_le_add (hfa x) (hgb x)
 
-example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 :=
-  sorry
+example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 := by
+  unfold FnLb
+  intro x
+  exact Left.mul_nonneg (nnf x) (nng x)
 
 example (hfa : FnUb f a) (hgb : FnUb g b) (nng : FnLb g 0) (nna : 0 ≤ a) :
-    FnUb (fun x ↦ f x * g x) (a * b) :=
-  sorry
+    FnUb (fun x ↦ f x * g x) (a * b) := by
+  unfold FnUb
+  intro x
+  exact mul_le_mul (hfa x) (hgb x) (nng x) nna
 
 def FnEven (f : ℝ → ℝ) : Prop :=
   ∀ x, f x = f (-x)
@@ -28,21 +34,27 @@ def FnEven (f : ℝ → ℝ) : Prop :=
 def FnOdd (f : ℝ → ℝ) : Prop :=
   ∀ x, f x = -f (-x)
 
-example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
-  sorry
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) := by
+  unfold FnLb
+  intro x
+  exact add_le_add (hfa x) (hgb x)
 
-example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 :=
-  sorry
+example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 := by
+  unfold FnLb
+  intro x
+  exact Left.mul_nonneg (nnf x) (nng x)
 
 example (hfa : FnUb f a) (hgb : FnUb g b) (nng : FnLb g 0) (nna : 0 ≤ a) :
-    FnUb (fun x ↦ f x * g x) (a * b) :=
-  sorry
+    FnUb (fun x ↦ f x * g x) (a * b) := by
+  unfold FnUb
+  intro x
+  exact mul_le_mul (hfa x) (hgb x) (nng x) nna
 
-example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x :=
-  sorry
+example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x := by
+  exact Monotone.const_mul mf nnc
 
-example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f (g x) :=
-  sorry
+example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f (g x) := by
+  exact Monotone.comp mf mg
 
 end Functions
 
@@ -57,10 +69,21 @@ def FnHasLb (f : ℝ → ℝ) :=
 variable {f g : ℝ → ℝ}
 
 example (lbf : FnHasLb f) (lbg : FnHasLb g) : FnHasLb fun x ↦ f x + g x := by
-  sorry
+  unfold FnHasLb
+  obtain ⟨ a, ha⟩ := lbf
+  obtain ⟨ b, hb⟩ := lbg
+  use a+b
+  unfold FnLb
+  intro x
+  exact add_le_add (ha x) (hb x)
 
 example {c : ℝ} (ubf : FnHasUb f) (h : c ≥ 0) : FnHasUb fun x ↦ c * f x := by
-  sorry
+  unfold FnHasUb
+  obtain ⟨ a, ha⟩ := ubf
+  use c*a
+  unfold FnUb
+  intro x
+  exact mul_le_mul_of_nonneg_left (ha x) h
 
 variable {α : Type*} [CommRing α]
 
@@ -69,15 +92,19 @@ def SumOfSquares (x : α) :=
 
 theorem sumOfSquares_mul {x y : α} (sosx : SumOfSquares x) (sosy : SumOfSquares y) :
     SumOfSquares (x * y) := by
+  unfold SumOfSquares at sosx sosy ⊢
+  obtain ⟨a,  b, hab⟩ := sosx
+  obtain ⟨c,  d, hcd⟩ := sosy
+  rw[hab,hcd]
   sorry
 
 example {a b c : ℕ} (divab : a ∣ b) (divac : a ∣ c) : a ∣ b + c := by
-  sorry
+  exact (Nat.dvd_add_iff_right divab).mp divac
 
 open Function
 
 example {c : ℝ} (h : c ≠ 0) : Surjective fun x ↦ c * x := by
-  sorry
+  exact mul_left_surjective₀ h
 
 end existential
 
