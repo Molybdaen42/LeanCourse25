@@ -95,8 +95,10 @@ theorem sumOfSquares_mul {x y : α} (sosx : SumOfSquares x) (sosy : SumOfSquares
   unfold SumOfSquares at sosx sosy ⊢
   obtain ⟨a,  b, hab⟩ := sosx
   obtain ⟨c,  d, hcd⟩ := sosy
+  use (a*c+b*d)
+  use (a*d-b*c)
   rw[hab,hcd]
-  sorry
+  ring_nf
 
 example {a b c : ℕ} (divab : a ∣ b) (divac : a ∣ c) : a ∣ b + c := by
   exact (Nat.dvd_add_iff_right divab).mp divac
@@ -112,30 +114,56 @@ section negation
 
 variable (f : ℝ → ℝ)
 
-example (h : ∀ a, ∃ x, f x < a) : ¬FnHasLb f :=
-  sorry
+example (h : ∀ a, ∃ x, f x < a) : ¬FnHasLb f := by
+  unfold FnHasLb FnLb
+  push_neg
+  assumption
 
-example : ¬FnHasUb fun x ↦ x :=
-  sorry
+example : ¬FnHasUb fun x ↦ x := by
+  unfold FnHasUb FnUb
+  push_neg
+  intro x
+  use x+1
+  norm_num
 
 example : ¬∀ {f : ℝ → ℝ}, Monotone f → ∀ {a b}, f a ≤ f b → a ≤ b := by
-  sorry
+  push_neg
+  use fun x ↦ 0
+  unfold Monotone
+  simp
+  use 1
+  use 0
+  simp
 
 end negation
 
 section conjunction
 
-theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  sorry
+theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 := by
+  have hx : x^2 ≥ 0 := sq_nonneg x
+  have hy : y^2 ≥ 0 := sq_nonneg y
+  apply sq_eq_zero_iff.1
+  linarith
 
-example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+  constructor
+  · intro h
+    constructor
+    · exact aux h
+    · rw [add_comm] at h
+      exact aux h
+  · intro ⟨hx,hy⟩
+    simp [hx,hy]
 
 theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y ∧ f x > f y := by
-  sorry
+  unfold Monotone
+  simp
 
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  apply not_monotone_iff.2
+  use 0
+  use 1
+  simp
 
 end conjunction
 
@@ -146,9 +174,19 @@ section disjunction
 #check eq_zero_or_eq_zero_of_mul_eq_zero
 
 example {x : ℝ} (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h' : (x-1)*(x+1)=0 := by
+    ring_nf
+    exact neg_add_eq_zero.mpr h.symm
+  apply eq_zero_or_eq_zero_of_mul_eq_zero at h'
+  simp [sub_eq_zero, add_eq_zero_iff_eq_neg] at h'
+  assumption
 
 example {x y : ℝ} (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
-  sorry
+  have h' : (x-y)*(x+y)=0 := by
+    ring_nf
+    exact sub_eq_zero_of_eq h
+  apply eq_zero_or_eq_zero_of_mul_eq_zero at h'
+  simp [sub_eq_zero, add_eq_zero_iff_eq_neg] at h'
+  assumption
 
 end disjunction
