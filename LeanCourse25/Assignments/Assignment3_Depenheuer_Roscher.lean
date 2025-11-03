@@ -3,6 +3,9 @@ import Mathlib.Analysis.Complex.Exponential
 import Mathlib
 open Real Function Set Nat
 
+
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
 /-
 
 * Hand in the solutions to the exercises below. Deadline: **Monday**, 10.11.2025 at **19:00**.
@@ -181,12 +184,31 @@ example (n : ℕ) : 6 * ∑ i ∈ Finset.range (n + 1), i ^ 2 = n * (n + 1) * (2
 /- Prove this without using lemmas from Mathlib. -/
 lemma image_and_intersection {α β : Type*} (f : α → β) (s : Set α) (t : Set β) :
     f '' s ∩ t = f '' (s ∩ f ⁻¹' t) := by
-  sorry
+  ext x
+  constructor
+  · intro ⟨⟨z,hzs,hfz⟩,hx⟩
+    use z
+    simp [hzs, hfz, hx]
+
+  · intro ⟨z,⟨⟨hzs,hfzt⟩,hfz⟩⟩
+    rw [←hfz]
+    simp at hfzt ⊢
+    constructor
+    · use z
+    · exact hfzt
   done
 
 /- Prove this without using lemmas from Mathlib. -/
 example {I : Type*} (f : α → β) (A : I → Set α) : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
-  sorry
+  ext y
+  constructor
+  · intro ⟨x,⟨Ai,⟨i,hAi⟩,hxAi⟩,hxy⟩
+    simp at hAi ⊢
+    use i
+    use x
+    rw [hAi]
+    exact ⟨hxAi,hxy⟩
+  · sorry
   done
 
 /- Prove this by finding relevant lemmas in Mathlib. -/
