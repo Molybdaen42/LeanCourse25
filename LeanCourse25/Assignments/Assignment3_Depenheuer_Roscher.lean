@@ -130,23 +130,32 @@ section casts
 
 /- The following exercises are to practice with casts. -/
 example (n : ℤ) (h : (n : ℚ) = 3) : 3 = n := by
-  sorry
+  norm_cast at h
+  exact h.symm
   done
 
 example (n m : ℕ) (h : (n : ℚ) + 3 ≤ 2 * m) : (n : ℝ) + 1 < 2 * m := by
-  sorry
+  norm_cast at h ⊢
+  linarith
   done
 
 example (n m : ℕ) (h : (n : ℚ) = m ^ 2 - 2 * m) : (n : ℝ) + 1 = (m - 1) ^ 2 := by
-  sorry
+  ring_nf
+  rw [eq_sub_iff_add_eq] at h
+  rw [sub_add_eq_add_sub,eq_sub_iff_add_eq]
+  norm_cast at h ⊢
+  rw [← h]
+  ring
   done
 
 example (n m : ℕ) : (n : ℝ) < (m : ℝ) ↔ n < m := by
-  sorry
+  norm_cast
   done
 
 example (n m : ℕ) (hn : 2 ∣ n) (h : n / 2 = m) : (n : ℚ) / 2 = m := by
-  sorry
+  obtain ⟨k,hk⟩ := hn
+  rw [← h, hk]
+  simp
   done
 
 example (q q' : ℚ) (h : q ≤ q') : exp q ≤ exp q' := by
@@ -254,7 +263,9 @@ example (f : ℕ → ℕ) (h : ∀ n : ℕ, f n = 1 + f (n + 1)) : False := by
 open Finset in
 lemma sum_cube_eq_sq_sum (n : ℕ) :
     (∑ i ∈ Finset.range (n + 1), (i : ℚ) ^ 3) = (∑ i ∈ Finset.range (n + 1), (i : ℚ)) ^ 2 := by
-  sorry
+  induction n with
+  | zero => simp
+  | succ n hn => sorry
   done
 
 end
@@ -274,7 +285,17 @@ example : (g ∘ f) x = g (f x) := by simp
 
 lemma surjective_composition (hf : SurjectiveFunction f) :
     SurjectiveFunction (g ∘ f) ↔ SurjectiveFunction g := by
-  sorry
+  unfold SurjectiveFunction at *
+  constructor
+  · intro hgf y
+    obtain ⟨x,hx⟩ := hgf y
+    use (f x)
+    assumption
+  · intro hg y
+    obtain ⟨z,hz⟩ := hg y
+    obtain ⟨x,hx⟩ := hf z
+    use x
+    simp [hx,hz]
   done
 
 /- When composing a surjective function by a linear function
@@ -282,7 +303,21 @@ to the left and the right, the result will still be a
 surjective function. The `ring` tactic will be very useful here! -/
 lemma surjective_linear (hf : SurjectiveFunction f) :
     SurjectiveFunction (fun x ↦ 2 * f (3 * (x + 4)) + 1) := by
-  sorry
+  let φ : ℝ → ℝ := fun x ↦ 2*x+1 -- outer function
+  let ψ : ℝ → ℝ := fun x ↦ 3*(x+4) -- inner function
+
+  -- They are both surjective
+  have hφ : SurjectiveFunction φ := by
+    intro y
+    use (y - 1)/2
+    ring
+  have hψ : SurjectiveFunction ψ := by
+    intro y
+    use y/3 - 4
+    ring
+
+  -- Thus their composition is surjective
+  exact (surjective_composition hψ).2 ((surjective_composition hf).2 hφ)
   done
 
 /- Let's prove Cantor's theorem:
@@ -291,7 +326,19 @@ Hint: use `let R := {x | x ∉ f x}` to consider the set `R` of elements `x`
 that are not in `f x`
 -/
 lemma exercise_cantor (α : Type*) (f : α → Set α) : ¬ Surjective f := by
-  sorry
+  let R := {x | x ∉ f x}
+  by_contra hf
+  -- let x be a preimage of the set R
+  obtain ⟨x,hx⟩ := hf R
+  -- Then, x ∉ R iff x ∈ R
+  have h : x ∉ R ↔ x ∈ R := by
+    constructor <;>
+    intro h <;>
+    simp [R] <;>
+    rw [hx] <;>
+    assumption
+  -- which is a contradiction
+  exact not_iff_self h
   done
 
 end Surjectivity
