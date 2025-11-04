@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Complex.Exponential
 
-import Mathlib
+--import Mathlib
 open Real Function Set Nat
 
 
@@ -201,20 +201,25 @@ lemma image_and_intersection {α β : Type*} (f : α → β) (s : Set α) (t : S
 /- Prove this without using lemmas from Mathlib. -/
 example {I : Type*} (f : α → β) (A : I → Set α) : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
   ext y
+  simp
   constructor
-  · intro ⟨x,⟨Ai,⟨i,hAi⟩,hxAi⟩,hxy⟩
-    simp at hAi ⊢
+  · intro ⟨x,⟨i,hxAi⟩,hxy⟩
     use i
     use x
-    rw [hAi]
-    exact ⟨hxAi,hxy⟩
-  · sorry
+  · intro ⟨i,x,⟨hxAi,hxy⟩⟩
+    use x
+    simp [hxy]
+    use i
   done
 
 /- Prove this by finding relevant lemmas in Mathlib. -/
 lemma preimage_square :
     (fun x : ℝ ↦ x ^ 2) ⁻¹' {y | y ≥ 16} = { x : ℝ | x ≤ -4 } ∪ { x : ℝ | x ≥ 4 } := by
-  sorry
+  ext x
+  simp
+  have : (16 : ℝ) = 4^2 := by norm_num
+  rw [this, sq_le_sq, le_abs']
+  norm_num
   done
 
 section
@@ -227,7 +232,22 @@ section
 -- Do so in the following exercise.
 -- (If you'd like a mathematical hint, scroll to the bottom of this file.)
 example (f : ℕ → ℕ) (h : ∀ n : ℕ, f n = 1 + f (n + 1)) : False := by
-  sorry
+  -- One can show via induction, that f(0) = n + f(n) holds for all n
+  have hn : ∀ n : ℕ, f 0 = n + f n := by
+    intro n
+    induction n with
+    | zero => norm_num
+    | succ n hn =>
+        rw [hn, h n]
+        ring
+  -- Then f(0) ≥ n for all n
+  have hn' : ∀ n : ℕ, f 0 ≥ n := by
+    intro n
+    simp [hn n]
+  -- and in particular, f(0) ≥ f(0) + 1.
+  specialize hn' (f 0 + 1)
+  -- Contradiction.
+  simp at hn'
   done
 
 /- Prove by induction that `∑_{i = 0}^{n} i^3 = (∑_{i=0}^{n} i) ^ 2`. -/
