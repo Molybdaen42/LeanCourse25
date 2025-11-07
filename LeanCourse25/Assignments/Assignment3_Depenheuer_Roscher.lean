@@ -265,7 +265,23 @@ lemma sum_cube_eq_sq_sum (n : ℕ) :
     (∑ i ∈ Finset.range (n + 1), (i : ℚ) ^ 3) = (∑ i ∈ Finset.range (n + 1), (i : ℚ)) ^ 2 := by
   induction n with
   | zero => simp
-  | succ n hn => sorry
+  | succ n hn =>
+      rw [Finset.range_add_one]
+      simp
+      rw [hn, add_sq, add_left_inj]
+      field_simp
+
+      clear hn
+      apply eq_add_of_sub_eq'
+
+      -- Now it's just left to show little Gauß in ℚ
+      induction n with
+      | zero => simp
+      | succ n hn =>
+          rw [Finset.range_add_one]
+          simp
+          rw [mul_add, ← hn]
+          ring
   done
 
 end
