@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Complex.Exponential
 
-import Mathlib
+--import Mathlib
 open Real Function Set
 
 /-
@@ -140,7 +140,9 @@ def op (a b : Point4) : Point4 where
 
 -- Prove that op is associative.
 lemma op_assoc {a b c : Point4} : op (op a b) c = op a (op b c) := by
-  sorry
+  simp only [op, Point4.mk.injEq]
+  ring_nf
+  tauto
   done
 
 -- Investigate whether op is commutative: prove one of the following.
@@ -148,29 +150,52 @@ lemma op_comm : ∀ a b : Point4, op a b = op b a := by sorry
 
 -- For the latter, you may the following helpful.
 example : ⟨0, 1, 2, 3⟩ ≠ (⟨0, 3, 2, 3⟩ : Point4) := by
-  sorry
+  simp
   done
 
 example {x y : ℝ} (h : x ≠ y) : ⟨0, 1, x, 3⟩ ≠ (⟨0, 1, y, 3⟩ : Point4) := by
-  sorry
+  simp
+  exact h
   done
 
 -- If you want to use one of these lemmas, prove it also.
-lemma ne_of_ne_x {a b : Point4} (h : a.x ≠ b.x) : a ≠ b := by sorry
-lemma ne_of_ne_y {a b : Point4} (h : a.y ≠ b.y) : a ≠ b := by sorry
-lemma ne_of_ne_z {a b : Point4} (h : a.z ≠ b.z) : a ≠ b := by sorry
-lemma ne_of_ne_w {a b : Point4} (h : a.w ≠ b.w) : a ≠ b := by sorry
+lemma ne_of_ne_x {a b : Point4} (h : a.x ≠ b.x) : a ≠ b := by
+  by_contra h'; apply h
+  simp [h']
+lemma ne_of_ne_y {a b : Point4} (h : a.y ≠ b.y) : a ≠ b := by
+  by_contra h'; apply h
+  simp [h']
+lemma ne_of_ne_z {a b : Point4} (h : a.z ≠ b.z) : a ≠ b := by
+  by_contra h'; apply h
+  simp [h']
+lemma ne_of_ne_w {a b : Point4} (h : a.w ≠ b.w) : a ≠ b := by
+  by_contra h'; apply h
+  simp [h']
 
 
 lemma not_op_comm : ¬(∀ a b : Point4, op a b = op b a) := by
-  sorry
+  push_neg
+  use ⟨0, 0, 1, 0⟩
+  use ⟨0, 1, 0, 0⟩
+  simp [op]
+  norm_num
 
 -- Let us now consider a special kind of points.
 def SpecialPoint := { p : Point4 // p.x ^2 + p.y ^2 + p.z ^ 2 + p.w ^ 2 = 1 }
 
 -- We define "the same" operation on special points: complete the proof.
 def op' (a b : SpecialPoint) : SpecialPoint :=
-  ⟨op a.val b.val, sorry⟩
+  ⟨op a.val b.val,
+  by
+    have ha := a.prop.symm
+    have hb := b.prop.symm
+
+    simp [op]
+    ring_nf
+    rw [← sub_eq_of_eq_add (sub_eq_of_eq_add (sub_eq_of_eq_add ha)),
+        ← sub_eq_of_eq_add (sub_eq_of_eq_add (sub_eq_of_eq_add hb))]
+    ring
+  ⟩
 
 -- Prove that `SpecialPoint` with the operation `op'` is a group.
 -- (If commutativity holds, it's even an abelian group. You don't need to prove this.)
@@ -185,7 +210,20 @@ structure Group' (G : Type*) where
 
 -- Note that you are working with subtypes again: you may need to use loogle to
 -- find the right lemma to get "out of subtype world".
-noncomputable example : Group' SpecialPoint := sorry
+noncomputable example : Group' SpecialPoint where
+  gop := op'
+  assoc := by simp only [op', op_assoc, implies_true]
+  neutral := ⟨(⟨1,0,0,0⟩ : Point4), by norm_num⟩
+  gop_neutral := by
+    intro a
+    simp [op', op]
+    rfl
+  inv := fun a ↦ ⟨⟨a.1.x,-a.1.y,-a.1.z,-a.1.w⟩, by simp [a.prop]⟩
+  gop_inv := by
+    intro a
+    simp [op', op]
+    ring_nf
+    simp [a.prop]
 
 
 -- Bonus: Do you recognise this operation from your mathematics classes?
