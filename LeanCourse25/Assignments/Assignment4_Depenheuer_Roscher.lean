@@ -360,11 +360,29 @@ def integerEquivalenceRelation : Setoid (ℤ × ℤ) where
 @[simp] lemma integerEquivalenceRelation'_iff (a b : ℤ × ℤ) :
   letI := integerEquivalenceRelation; a ≈ b ↔ a.1 + b.2 = a.2 + b.1 := by rfl
 
+-- will be needed in the proof below, I know that h is not a good name but oh well
+lemma h :letI := integerEquivalenceRelation; ∀ (a b : ℤ × ℤ),
+a ≈ b →(match a with| (k, l) => k - l) =match b with| (k, l) => k - l := by
+  intro a b
+  simp
+  intro h
+  rw [sub_eq_sub_iff_add_eq_add, add_comm b.1]
+  exact h
+
 example : Quotient integerEquivalenceRelation ≃ ℤ where
-  toFun := Quotient.lift (fun ⟨k,l⟩ ↦ k-l) (sorry)
-  --need proof that fun is well defined on the equiv classes
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
+  toFun := Quotient.lift (fun ⟨k,l⟩ ↦ k-l) (h)
+  invFun := fun k ↦ Quotient.mk integerEquivalenceRelation ⟨k,0⟩
+  left_inv := by
+    unfold LeftInverse
+    intro x
+    simp
+    have h := Quotient.exists_rep x
+    obtain ⟨ a, ha⟩  := h
+    rw [← ha]
+    apply Quotient.sound
+    simp
+  right_inv := by
+    unfold RightInverse LeftInverse
+    simp
 
 end EquivalenceRelation
