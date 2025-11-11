@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Complex.Exponential
 
-import Mathlib
+--import Mathlib
 open Real Function Set Nat
 
 
@@ -130,23 +130,32 @@ section casts
 
 /- The following exercises are to practice with casts. -/
 example (n : ℤ) (h : (n : ℚ) = 3) : 3 = n := by
-  sorry
+  norm_cast at h
+  exact h.symm
   done
 
 example (n m : ℕ) (h : (n : ℚ) + 3 ≤ 2 * m) : (n : ℝ) + 1 < 2 * m := by
-  sorry
+  norm_cast at h ⊢
+  linarith
   done
 
 example (n m : ℕ) (h : (n : ℚ) = m ^ 2 - 2 * m) : (n : ℝ) + 1 = (m - 1) ^ 2 := by
-  sorry
+  ring_nf
+  rw [eq_sub_iff_add_eq] at h
+  rw [sub_add_eq_add_sub,eq_sub_iff_add_eq]
+  norm_cast at h ⊢
+  rw [← h]
+  ring
   done
 
 example (n m : ℕ) : (n : ℝ) < (m : ℝ) ↔ n < m := by
-  sorry
+  norm_cast
   done
 
 example (n m : ℕ) (hn : 2 ∣ n) (h : n / 2 = m) : (n : ℚ) / 2 = m := by
-  sorry
+  obtain ⟨k,hk⟩ := hn
+  rw [← h, hk]
+  simp
   done
 
 example (q q' : ℚ) (h : q ≤ q') : exp q ≤ exp q' := by
@@ -201,20 +210,25 @@ lemma image_and_intersection {α β : Type*} (f : α → β) (s : Set α) (t : S
 /- Prove this without using lemmas from Mathlib. -/
 example {I : Type*} (f : α → β) (A : I → Set α) : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
   ext y
+  simp
   constructor
-  · intro ⟨x,⟨Ai,⟨i,hAi⟩,hxAi⟩,hxy⟩
-    simp at hAi ⊢
+  · intro ⟨x,⟨i,hxAi⟩,hxy⟩
     use i
     use x
-    rw [hAi]
-    exact ⟨hxAi,hxy⟩
-  · sorry
+  · intro ⟨i,x,⟨hxAi,hxy⟩⟩
+    use x
+    simp [hxy]
+    use i
   done
 
 /- Prove this by finding relevant lemmas in Mathlib. -/
 lemma preimage_square :
     (fun x : ℝ ↦ x ^ 2) ⁻¹' {y | y ≥ 16} = { x : ℝ | x ≤ -4 } ∪ { x : ℝ | x ≥ 4 } := by
-  sorry
+  ext x
+  simp
+  have : (16 : ℝ) = 4^2 := by norm_num
+  rw [this, sq_le_sq, le_abs']
+  norm_num
   done
 
 section
@@ -227,14 +241,47 @@ section
 -- Do so in the following exercise.
 -- (If you'd like a mathematical hint, scroll to the bottom of this file.)
 example (f : ℕ → ℕ) (h : ∀ n : ℕ, f n = 1 + f (n + 1)) : False := by
-  sorry
+  -- One can show via induction, that f(0) = n + f(n) holds for all n
+  have hn : ∀ n : ℕ, f 0 = n + f n := by
+    intro n
+    induction n with
+    | zero => norm_num
+    | succ n hn =>
+        rw [hn, h n]
+        ring
+  -- Then f(0) ≥ n for all n
+  have hn' : ∀ n : ℕ, f 0 ≥ n := by
+    intro n
+    simp [hn n]
+  -- and in particular, f(0) ≥ f(0) + 1.
+  specialize hn' (f 0 + 1)
+  -- Contradiction.
+  simp at hn'
   done
 
 /- Prove by induction that `∑_{i = 0}^{n} i^3 = (∑_{i=0}^{n} i) ^ 2`. -/
 open Finset in
 lemma sum_cube_eq_sq_sum (n : ℕ) :
     (∑ i ∈ Finset.range (n + 1), (i : ℚ) ^ 3) = (∑ i ∈ Finset.range (n + 1), (i : ℚ)) ^ 2 := by
-  sorry
+  induction n with
+  | zero => simp
+  | succ n hn =>
+      rw [Finset.range_add_one]
+      simp
+      rw [hn, add_sq, add_left_inj]
+      field_simp
+
+      clear hn
+      apply eq_add_of_sub_eq'
+
+      -- Now it's just left to show little Gauß in ℚ
+      induction n with
+      | zero => simp
+      | succ n hn =>
+          rw [Finset.range_add_one]
+          simp
+          rw [mul_add, ← hn]
+          ring
   done
 
 end
@@ -254,7 +301,17 @@ example : (g ∘ f) x = g (f x) := by simp
 
 lemma surjective_composition (hf : SurjectiveFunction f) :
     SurjectiveFunction (g ∘ f) ↔ SurjectiveFunction g := by
-  sorry
+  unfold SurjectiveFunction at *
+  constructor
+  · intro hgf y
+    obtain ⟨x,hx⟩ := hgf y
+    use (f x)
+    assumption
+  · intro hg y
+    obtain ⟨z,hz⟩ := hg y
+    obtain ⟨x,hx⟩ := hf z
+    use x
+    simp [hx,hz]
   done
 
 /- When composing a surjective function by a linear function
@@ -262,7 +319,21 @@ to the left and the right, the result will still be a
 surjective function. The `ring` tactic will be very useful here! -/
 lemma surjective_linear (hf : SurjectiveFunction f) :
     SurjectiveFunction (fun x ↦ 2 * f (3 * (x + 4)) + 1) := by
-  sorry
+  let φ : ℝ → ℝ := fun x ↦ 2*x+1 -- outer function
+  let ψ : ℝ → ℝ := fun x ↦ 3*(x+4) -- inner function
+
+  -- They are both surjective
+  have hφ : SurjectiveFunction φ := by
+    intro y
+    use (y - 1)/2
+    ring
+  have hψ : SurjectiveFunction ψ := by
+    intro y
+    use y/3 - 4
+    ring
+
+  -- Thus their composition is surjective
+  exact (surjective_composition hψ).2 ((surjective_composition hf).2 hφ)
   done
 
 /- Let's prove Cantor's theorem:
@@ -271,7 +342,19 @@ Hint: use `let R := {x | x ∉ f x}` to consider the set `R` of elements `x`
 that are not in `f x`
 -/
 lemma exercise_cantor (α : Type*) (f : α → Set α) : ¬ Surjective f := by
-  sorry
+  let R := {x | x ∉ f x}
+  by_contra hf
+  -- let x be a preimage of the set R
+  obtain ⟨x,hx⟩ := hf R
+  -- Then, x ∉ R iff x ∈ R
+  have h : x ∉ R ↔ x ∈ R := by
+    constructor <;>
+    intro h <;>
+    simp [R] <;>
+    rw [hx] <;>
+    assumption
+  -- which is a contradiction
+  exact not_iff_self h
   done
 
 end Surjectivity
