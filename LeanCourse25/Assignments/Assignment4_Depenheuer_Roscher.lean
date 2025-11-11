@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Complex.Exponential
 
---import Mathlib
+import Mathlib
 open Real Function Set
 
 /-
@@ -169,6 +169,7 @@ lemma op_assoc {a b c : Point4} : op (op a b) c = op a (op b c) := by
 
 -- Investigate whether op is commutative: prove one of the following.
 lemma op_comm : ∀ a b : Point4, op a b = op b a := by sorry
+--not provable so still a sorry. But the one below is proven
 
 -- For the latter, you may the following helpful.
 example : ⟨0, 1, 2, 3⟩ ≠ (⟨0, 3, 2, 3⟩ : Point4) := by
@@ -359,6 +360,11 @@ def integerEquivalenceRelation : Setoid (ℤ × ℤ) where
 @[simp] lemma integerEquivalenceRelation'_iff (a b : ℤ × ℤ) :
   letI := integerEquivalenceRelation; a ≈ b ↔ a.1 + b.2 = a.2 + b.1 := by rfl
 
-example : Quotient integerEquivalenceRelation ≃ ℤ := sorry
+example : Quotient integerEquivalenceRelation ≃ ℤ where
+  toFun := Quotient.lift (fun ⟨k,l⟩ ↦ k-l) (sorry)
+  --need proof that fun is well defined on the equiv classes
+  invFun := sorry
+  left_inv := sorry
+  right_inv := sorry
 
 end EquivalenceRelation
