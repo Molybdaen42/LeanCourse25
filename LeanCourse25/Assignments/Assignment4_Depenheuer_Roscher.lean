@@ -114,13 +114,18 @@ abbrev PosReal : Type := {x : ℝ // x > 0}
 /- Codomain is a subtype (usually not recommended). -/
 example (f : ℝ → PosReal) (hf : Monotone f) :
     Monotone (fun x ↦ log (f x)) := by
-  sorry
+  simp [Monotone]
+  intro a b hab
+  exact log_le_log (f a).prop (hf hab)
   done
 
 /- Specify that the range is a subset of a given set (recommended). -/
 example (f : ℝ → ℝ) (hf : range f ⊆ {x | x > 0}) (h2f : Monotone f) :
   Monotone (log ∘ f) := by
-  sorry
+  simp [range] at hf
+  simp [Monotone]
+  intro a b hab
+  apply log_le_log (hf a) (h2f hab)
   done
 
 /- Domain is a subtype (not recommended). -/
@@ -138,7 +143,18 @@ example (f : ℝ → ℝ) (hf : MonotoneOn f {x | x > 0}) :
 
 example : Setoid (ℕ × ℕ) where
   r := fun ⟨k, l⟩ ⟨m, n⟩ ↦ k + n = m + l
-  iseqv := sorry
+  iseqv := {
+    refl := by simp
+    symm := by
+      simp
+      intro a b c d h
+      rw [h]
+    trans := by
+      simp
+      intro a b c d e f h1 h2
+      -- apply Nat.add_left_cancel
+      sorry
+  }
 
 
 /-! # Exercises to hand-in. -/
@@ -340,21 +356,23 @@ section EquivalenceRelation
 -- Prove that the following defines an equivalence relation.
 def integerEquivalenceRelation : Setoid (ℤ × ℤ) where
   r := fun ⟨k, l⟩ ⟨m, n⟩ ↦ k + n = l + m
-  iseqv := by
-    simp
-    constructor
-    · -- refl
+  iseqv := {
+    refl := by
       intro x
       apply add_comm
-    · -- symm
+    symm := by
       intro x y h
+      simp at *
       rw [add_comm, ← h, add_comm]
-    · -- trans
+    trans := by
       intro x y z h1 h2
+      simp at *
       apply eq_sub_of_add_eq at h1
       apply eq_sub_of_add_eq at h2
       rw [h1,h2]
       ring
+  }
+
 
 /- This simp-lemma will simplify `x ≈ y` in the lemma below. -/
 @[simp] lemma integerEquivalenceRelation'_iff (a b : ℤ × ℤ) :
