@@ -3,6 +3,8 @@ import Mathlib.Analysis.Complex.Exponential
 import Mathlib
 open Real Function Set
 
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
 /-
 
 * An advertisement: for a current event by the *Fachschaft* you may find interesting:
