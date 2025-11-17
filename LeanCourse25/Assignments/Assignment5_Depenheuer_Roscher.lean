@@ -116,7 +116,8 @@ Remember that Lean has proof irrelevance: any two proofs of a given proposition 
 example (choiceFunction : ∀ (α : Type) (p : α → Prop) (_h : ∃ x, p x), α)
     (h : ∀ (α : Type) (p : α → Prop) (x : α) (hx : p x), choiceFunction α p ⟨x, hx⟩ = x) :
     False := by
-  sorry
+  specialize h Bool (fun x ↦ true)
+  simp at h
 
 
 end choice
