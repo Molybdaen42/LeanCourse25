@@ -148,9 +148,43 @@ Hints:
 attribute [-simp] Finset.card_powerset
 #check Finset.induction
 
-lemma finset_card_powerset (α : Type*) (s : Finset α) :
+lemma finset_card_powerset (α : Type*) [DecidableEq α] (s : Finset α) :
     Finset.card (Finset.powerset s) = 2 ^ Finset.card s := by
-  sorry
+  induction s using Finset.induction with
+  | empty => rfl
+  | insert x s hxs ih =>
+      have :  Disjoint s.powerset (Finset.image (insert x) s.powerset) := by
+        intro t hts htxs
+        by_contra ht_nonempty
+        simp at *
+        obtain ⟨u,hu⟩ := Finset.Nonempty.exists_mem (Finset.nonempty_iff_ne_empty.mpr ht_nonempty)
+        have hus := Finset.mem_powerset.mp (hts hu)
+        have ⟨v,hvs,hxvu⟩ := Finset.mem_image.mp (htxs hu)
+        rw [Finset.mem_powerset] at hvs
+        by_cases hxu : x ∈ u
+        · exact hxs (hus hxu)
+        · simp [← hxvu] at hxu
+      -- divide 𝒫(s) into two sets: one with x and one without
+      rw [Finset.powerset_insert, Finset.card_union_of_disjoint this]
+      -- compute stuff and use the induction hypothesis
+      rw [Finset.card_insert_of_notMem hxs, Nat.pow_add_one, mul_two, ← ih, Nat.add_left_cancel_iff]
+      apply Finset.card_image_of_injOn
+      intro t₁ ht₁ t₂ ht₂ h
+      simp at ht₁ ht₂
+      replace ht₁ : x ∉ t₁ := by exact fun a ↦ hxs (ht₁ a)
+      replace ht₂ : x ∉ t₂ := by exact fun a ↦ hxs (ht₂ a)
+      ext y
+      constructor
+      · intro hyt₁
+        have hy_ne_x : y ≠ x := ne_of_mem_of_not_mem hyt₁ ht₁
+        have : y ∈ insert x t₁ := Finset.mem_insert_of_mem hyt₁
+        rw [h] at this
+        exact Finset.mem_of_mem_insert_of_ne this hy_ne_x
+      · intro hyt₂
+        have hy_ne_x : y ≠ x := ne_of_mem_of_not_mem hyt₂ ht₂
+        have : y ∈ insert x t₂ := Finset.mem_insert_of_mem hyt₂
+        rw [← h] at this
+        exact Finset.mem_of_mem_insert_of_ne this hy_ne_x
   done
 
 end cardinality
