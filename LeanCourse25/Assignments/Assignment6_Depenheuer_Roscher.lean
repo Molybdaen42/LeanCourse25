@@ -103,22 +103,44 @@ end Ring
 section conjugate
 
 /- Define the conjugate of a subgroup, as the elements of the form `xhx⁻¹` for `h ∈ H`. -/
-def conjugate (x : G) (H : Subgroup G) : Subgroup G := sorry
+def conjugate (x : G) (H : Subgroup G) : Subgroup G where
+  carrier := {x * h * x⁻¹ | h ∈ H}
+  mul_mem' := by
+    simp
+    intro g₁ g₂ h₁ hh₁ hh₁g₁ h₂ hh₂ hh₂g₂
+    use h₁ * h₂
+    simp only [H.mul_mem hh₁ hh₂, ← hh₁g₁, ← hh₂g₂, conj_mul, and_true]
+  one_mem' := by simp
+  inv_mem' := by
+    simp
+    intro h hh
+    use h⁻¹
+    simp only [inv_mem_iff, hh, mul_assoc, and_self]
 
 -- Characterise normal subgroups in terms of your definition.
-example {H : Subgroup G} : H.Normal ↔ sorry := by
-  sorry
+example {H : Subgroup G} : H.Normal ↔ ∀ x : G, ∀ y ∈ conjugate x H, y ∈ H := by
+  constructor
+  · intro hHNormal
+    simp [conjugate]
+    intro g h hh
+    exact hHNormal.1 h hh g
+  · simp [conjugate]
+    intro hHNormal'
+    refine { conj_mem := ?_ }
+    intro h hh g
+    exact hHNormal' g h hh
 
 /- Prove the following lemmas. In the language of group action (next Tuesday), they prove that
 a group acts on its own subgroups by conjugation. -/
 
 lemma conjugate_one (H : Subgroup G) : conjugate 1 H = H := by
-  sorry
+  ext h
+  simp [conjugate]
   done
 
 lemma conjugate_mul (x y : G) (H : Subgroup G) :
     conjugate (x * y) H = conjugate x (conjugate y H) := by
-  sorry
+  simp [conjugate, mul_assoc]
   done
 
 end conjugate
@@ -134,16 +156,29 @@ variable {G : AddSubgroup ℚ}
 
 -- In the proof we will consider the following subgroup, consisting of all `n`-fold multiples
 -- of rational numbers.
-def multiple (n : ℕ) : AddSubgroup ℚ := sorry
+def multiple (n : ℕ) : AddSubgroup ℚ where
+  carrier := {n * r | r}
+  add_mem' := by
+    simp
+    intro x₁ x₂ r₁ h₁ r₂ h₂
+    use r₁ + r₂
+    rw [← h₁, ← h₂, mul_add]
+  zero_mem' := by simp
+  neg_mem' := by
+    simp
+    intro r
+    use -r
+    apply mul_neg
 
 -- If your definition above is correct, this proof is true by rfl.
-lemma mem_multiple_iff (n : ℕ) (q : ℚ) : q ∈ multiple n ↔ ∃ r, n * r = q := sorry -- by rfl
+lemma mem_multiple_iff (n : ℕ) (q : ℚ) : q ∈ multiple n ↔ ∃ r, n * r = q := by rfl
 
 -- The next lemma is a general fact from group theory: use mathlib to find the right lemma.
 -- Hint: it's similar to `Subgroup.pow_index_mem`.
 
 lemma step1 {n : ℕ} (hG : G.index = n) (q : ℚ) : n • q ∈ G := by
-  sorry
+  rw [← hG]
+  exact AddSubgroup.nsmul_index_mem G q
 
 lemma step2 {n : ℕ} (hG : G.index = n) : multiple n ≤ G := by
   sorry
