@@ -181,10 +181,22 @@ lemma step1 {n : ℕ} (hG : G.index = n) (q : ℚ) : n • q ∈ G := by
   exact AddSubgroup.nsmul_index_mem G q
 
 lemma step2 {n : ℕ} (hG : G.index = n) : multiple n ≤ G := by
-  sorry
+  rw [ AddSubgroup.mk_le_mk, AddSubmonoid.mk_le_mk, AddSubsemigroup.mk_le_mk]
+  rw [ Set.subset_def]
+  intro x hx
+  unfold multiple at hx
+  simp at hx
+  obtain ⟨ r, hr⟩ := hx
+  rw [← hr, AddSubgroup.mem_carrier, ← smul_eq_mul]
+  exact_mod_cast step1 hG r
 
 lemma step3 {n : ℕ} (hn : n ≠ 0) : multiple n = ⊤ := by
-  sorry
+  rw [AddSubgroup.ext_iff]
+  intro x
+  constructor
+  · simp
+  · sorry
+
 
 -- The goal of this exercise: (ℚ, +) has no non-trivial subgroups of finite index.
 example (hG : G.index ≠ 0) : G = ⊤ := by
