@@ -182,21 +182,24 @@ lemma step1 {n : ℕ} (hG : G.index = n) (q : ℚ) : n • q ∈ G := by
 
 lemma step2 {n : ℕ} (hG : G.index = n) : multiple n ≤ G := by
   intro q ⟨r,hnrq⟩
-  rw [← hnrq, ← nsmul_eq_mul]
+  rw [← hnrq, ← smul_eq_mul]
   exact step1 hG r
 
 lemma step3 {n : ℕ} (hn : n ≠ 0) : multiple n = ⊤ := by
   ext q
-  simp [mem_multiple_iff]
+  simp
   use q/n
   field_simp
 
 -- The goal of this exercise: (ℚ, +) has no non-trivial subgroups of finite index.
 example (hG : G.index ≠ 0) : G = ⊤ := by
   rw [← step3 hG]
-
-  sorry
-
+  ext q
+  constructor
+  · intro hq
+    use q/G.index
+    field_simp
+  · apply step2 rfl
 end
 
 end finite
@@ -215,15 +218,24 @@ open Nat Finset in
 lemma add_pow_eq_pow_add_pow (x y : R) : (x + y) ^ p = x ^ p + y ^ p := by
   have hp' : p.Prime := hp.out
   have range_eq_insert_Ioo : range p = insert 0 (Ioo 0 p) := by
-    sorry
+    rw [range_eq_Ico, Ioo_insert_left]
+    exact pos_of_neZero p
   have dvd_choose : ∀ i ∈ Ioo 0 p, p ∣ Nat.choose p i := by
-    sorry
+    simp only [mem_Ioo]
+    intro i ⟨h0i, hip⟩
+    exact Prime.dvd_choose_self hp' (ne_zero_of_lt h0i) hip
   have h6 : ∑ i ∈ Ioo 0 p, x ^ i * y ^ (p - i) * Nat.choose p i = 0 :=
     calc
-     _ =  ∑ i ∈ Ioo 0 p, x ^ i * y ^ (p - i) * 0 := by
-       sorry
-     _ = 0 := by sorry
-  sorry
+     _ = ∑ i ∈ Ioo 0 p, x ^ i * y ^ (p - i) * 0 := by
+          apply sum_congr rfl
+          intro i hi
+          congr
+          apply (CharP.cast_eq_zero_iff R p (p.choose i)).mpr
+          exact dvd_choose i hi
+     _ = 0 := by
+          simp only [mul_zero, sum_const_zero]
+  simp [add_pow, range_add_one]
+  simp [range_eq_insert_Ioo, h6]
   done
 
 end frobenius
