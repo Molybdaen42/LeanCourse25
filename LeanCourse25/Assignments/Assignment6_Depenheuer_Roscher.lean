@@ -5,6 +5,8 @@ import Mathlib.GroupTheory.Index
 import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.Tactic.Group
 
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
 /-! # Exercises to practice -/
 
 variable {G H K : Type*} [Group G] [Group H] [Group K]
@@ -12,7 +14,7 @@ open Subgroup
 
 -- Prove that the trivial subgroup of the integers has index zero.
 example : (⊥ : AddSubgroup ℤ).index = 0 := by
-  sorry
+  simp only [AddSubgroup.index_bot, Nat.card_eq_zero_of_infinite]
 
 /- State and prove that the preimage of `U` under the composition of `φ` and `ψ` is a preimage
 of a preimage of `U`. This should be an equality of subgroups! -/
