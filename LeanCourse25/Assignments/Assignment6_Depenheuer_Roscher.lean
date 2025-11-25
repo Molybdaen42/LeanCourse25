@@ -194,7 +194,7 @@ lemma step3 {n : ℕ} (hn : n ≠ 0) : multiple n = ⊤ := by
 -- The goal of this exercise: (ℚ, +) has no non-trivial subgroups of finite index.
 example (hG : G.index ≠ 0) : G = ⊤ := by
   rw [← step3 hG]
-  
+
   sorry
 
 end
