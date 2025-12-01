@@ -1,6 +1,10 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Order.CompletePartialOrder
 
+
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
+
 noncomputable section
 open BigOperators Function Set Real Filter Classical Topology TopologicalSpace
 
@@ -272,7 +276,7 @@ example (u : ℕ → ℝ) (x : ℝ) : MyTendsto u atTop (𝓝 x) ↔ ∀ ε > 0,
 -- The following exercise is a bonus exercise: any points you get here will be counted on top
 -- of your regular points.
 example (f : ℝ → ℝ) (x : ℝ) :
-    Tendsto f (𝓝 x) (𝓝 (f x)) ↔ ∀ ε > 0, ∃ δ > 0, ∀ x y, |x - y| < δ → |f x - f y| < ε := by
+    Tendsto f (𝓝 x) (𝓝 (f x)) ↔ ∀ ε > 0, ∃ δ > 0, ∀ y, |x - y| < δ → |f x - f y| < ε := by
   sorry
 
 end tendsto
