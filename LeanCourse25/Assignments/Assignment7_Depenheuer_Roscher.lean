@@ -14,8 +14,8 @@ open BigOperators Function Set Real Filter Classical Topology TopologicalSpace
 def principal {α : Type*} (s : Set α) : Filter α
     where
   sets := { t | s ⊆ t }
-  univ_sets := by sorry
-  sets_of_superset := by sorry
+  univ_sets := by simp
+  sets_of_superset := by simp; intro X Y hsX hXY x hx; exact hXY (hsX hx)
   inter_sets := by sorry
 
 -- Work out the details in the definition of the atTop filter.
@@ -217,12 +217,37 @@ precisely when one element is in the orbit of the other. -/
 def orbitOf (x : X) : Set X := range (fun g : G ↦ g • x)
 
 lemma orbitOf_eq_iff (x y : X) : orbitOf G x = orbitOf G y ↔ y ∈ orbitOf G x := by
-  sorry
+  constructor
+  · intro h
+    rw [h]
+    use 1
+    simp
+  · intro ⟨g,hg⟩
+    ext z
+    simp [orbitOf] at *
+    rw [← hg]
+    constructor
+    · intro ⟨g',hg'⟩
+      use g' • g⁻¹
+      rw [← hg', smul_assoc, inv_smul_smul]
+    · intro ⟨g',hg'⟩
+      use g' • g
+      rw [← hg', smul_assoc]
   done
 
 /- Define the stabilizer of an element `x` as the subgroup of elements
 `g ∈ G` that satisfy `g • x = x`. -/
-def stabilizerOf (x : X) : Subgroup G := sorry
+def stabilizerOf (x : X) : Subgroup G where
+  carrier := {g : G | g • x = x}
+  mul_mem' h1 h2 := by
+    simp at *
+    nth_rw 2 [← h1, ← h2]
+    rw [← smul_eq_mul, smul_assoc]
+  one_mem' := by simp
+  inv_mem' := by
+    simp
+    intro g hg
+    nth_rw 1 [← hg, inv_smul_smul]
 
 -- This is a lemma that allows `simp` to simplify `x ≈ y` in the proof below.
 @[simp] theorem leftRel_iff {x y : G} {s : Subgroup G} :
@@ -235,6 +260,15 @@ Hint: Only define the forward map (as a separate definition),
 and use `Equiv.ofBijective` to get an equivalence.
 (Note that we are coercing `orbitOf G x` to a (sub)type in the right-hand side) -/
 def orbit_stabilizer_theorem (x : X) : G ⧸ stabilizerOf G x ≃ orbitOf G x := by
+  have : ∀ g : G, g • x ∈ orbitOf G x := by
+    intro g
+    use g
+  let f : G → orbitOf G x := sorry-- fun g ↦ g • x (by this)
+  let f' : G ⧸ stabilizerOf G x → orbitOf G x := Quotient.lift f (by
+    intro a b hab
+    simp [stabilizerOf] at hab
+    sorry)
+  apply Equiv.ofBijective f'
   sorry
   done
 
@@ -266,7 +300,9 @@ example (u : ℕ → ℝ) (x : ℝ) : MyTendsto u atTop (𝓝 x) ↔ ∀ ε > 0,
   · intro h ε hε
     have : ∃ N, ∀ n ≥ N, n ∈ u ⁻¹' (Ioo (x - ε) (x + ε)) := by
       sorry
-    sorry
+    simp_rw [abs_sub_lt_iff, sub_lt_iff_lt_add']
+    simp_rw [mem_preimage, mem_Ioo, and_comm, sub_lt_iff_lt_add] at this
+    exact this
   · intro h s hs
     -- Choose epsilon so an open interval around it is contained in s.
     have : ∃ ε, 0 < ε ∧ Ioo (x - ε) (x + ε) ⊆ s := by
