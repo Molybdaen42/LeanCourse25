@@ -260,16 +260,23 @@ Hint: Only define the forward map (as a separate definition),
 and use `Equiv.ofBijective` to get an equivalence.
 (Note that we are coercing `orbitOf G x` to a (sub)type in the right-hand side) -/
 def orbit_stabilizer_theorem (x : X) : G ⧸ stabilizerOf G x ≃ orbitOf G x := by
-  have : ∀ g : G, g • x ∈ orbitOf G x := by
-    intro g
-    use g
-  let f : G → orbitOf G x := sorry-- fun g ↦ g • x (by this)
+  let f : G → orbitOf G x := fun g ↦ ⟨g • x, by use g⟩
   let f' : G ⧸ stabilizerOf G x → orbitOf G x := Quotient.lift f (by
     intro a b hab
     simp [stabilizerOf] at hab
-    sorry)
+    simp [f]
+    nth_rw 1 [← hab, ← smul_eq_mul, smul_assoc, smul_inv_smul])
   apply Equiv.ofBijective f'
-  sorry
+  constructor
+  · -- injectivity
+    intro g₁ g₂ hfg₁_eq_fg₂
+    simp [f', f] at hfg₁_eq_fg₂
+    sorry
+  · -- surjectivity
+    intro ⟨y,⟨g,hgy⟩⟩
+    simp at hgy
+    use g
+    exact SetCoe.ext hgy
   done
 
 
@@ -330,9 +337,28 @@ lemma technical_filter_exercise {ι α : Type*} {p : ι → Prop} {q : Prop} {a 
     (∀ᶠ i in L, p i ↔ q) ↔
     Tendsto (fun i ↦ if p i then a else b) L (if q then F else G) := by
   have hab : a ≠ b := by
-    sorry
+    exact haF hbF
   rw [tendsto_iff_eventually]
-  sorry
+  constructor
+  · intro h1 r h2
+    apply Filter.Eventually.mono h1
+    intro x hx
+    simp [hx]
+    by_cases hq : q
+    · simp [hq] at *
+      exact haF h2
+    · simp [hq] at *
+      exact hbG h2
+  · intro h
+    by_cases hq : q
+    · simp [hq] at h ⊢
+      specialize h hbF
+      simp at h
+      exact h.1
+    · simp [hq] at h ⊢
+      specialize h haG
+      simp at h
+      exact h.1
   done
 
 /- To be more concrete, we can use the previous lemma to prove the following.
