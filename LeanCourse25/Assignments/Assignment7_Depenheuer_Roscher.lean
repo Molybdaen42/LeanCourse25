@@ -306,13 +306,20 @@ example (u : ℕ → ℝ) (x : ℝ) : MyTendsto u atTop (𝓝 x) ↔ ∀ ε > 0,
   constructor
   · intro h ε hε
     have : ∃ N, ∀ n ≥ N, n ∈ u ⁻¹' (Ioo (x - ε) (x + ε)) := by
-      sorry
+      apply eventually_atTop.mp
+      apply h
+      apply mem_nhds_iff.2
+      use Ioo (x-ε) (x+ε)
+      simp [hε, isOpen_Ioo]
+      rfl
     simp_rw [abs_sub_lt_iff, sub_lt_iff_lt_add']
     simp_rw [mem_preimage, mem_Ioo, and_comm, sub_lt_iff_lt_add] at this
     exact this
   · intro h s hs
     -- Choose epsilon so an open interval around it is contained in s.
     have : ∃ ε, 0 < ε ∧ Ioo (x - ε) (x + ε) ⊆ s := by
+      obtain ⟨t,hts,htopen,hxt⟩ := mem_nhds_iff.1 hs
+
       sorry
     sorry
 
