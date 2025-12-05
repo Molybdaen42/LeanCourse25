@@ -92,7 +92,15 @@ end
 /-! # Exercises to hand in -/
 
 example {X : Type*} [MetricSpace X] {x : X} : ⋂ i ∈ {s : Set X | IsOpen s ∧ x ∈ s }, i = {x} := by
-  sorry
+  ext y
+  simp
+  constructor
+  · intro h
+    specialize h (Metric.ball x (dist y x))
+    simp at h
+    assumption
+  · intro h
+    simp [h]
   done
 
 
@@ -101,12 +109,22 @@ variable (α : Type*) [ConditionallyCompleteLinearOrder α]
   [TopologicalSpace α] [OrderTopology α] [DenselyOrdered α] in
 lemma mono_exercise_part1_copy {f : α → α} (hf : Continuous f) (h2f : Injective f) {a b x : α}
     (hab : a ≤ b) (h2ab : f a < f b) (hx : a ≤ x) : f a ≤ f x := by
+
+  -- intermediate_value_uIcc
+  -- uIcc_of_le
+  -- mem_uIcc
   sorry
   done
 
 example (x y : ℝ) :
     let f := fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y
     fderiv ℝ f (x, y) (1, 0) = 2 * x + y := by
+  simp
+  --have : fderiv ℝ (fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y) = fun (x,y) ↦ (2*x+y,x) := by sorry
+  --apply HasFDerivAt.fderiv
+  --#check HasFDerivAt
+  --have : HasFDerivAt (fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y) (fun ((x,y): ℝ × ℝ) ↦ 2*x + y) := by sorry
+  -- hasFDerivAt_iff_hasDerivAt
   sorry
 
 section
@@ -127,14 +145,21 @@ The following lemmas will be useful
 * `HasDerivWithinAt.derivWithin`
 * `DifferentiableAt.derivWithin`.
 -/
+#check HasDerivWithinAt.congr
+#check uniqueDiffWithinAt_convex
+#check HasDerivWithinAt.derivWithin
+#check DifferentiableAt.derivWithin
 
 example : ¬ DifferentiableAt ℝ (fun x : ℝ ↦ |x|) 0 := by
   intro h
   have h1 : HasDerivWithinAt (fun x : ℝ ↦ |x|) 1 (Ici 0) 0 := by
-    sorry
+    have : HasDerivWithinAt (id : ℝ → ℝ) 1 (Ici 0) 0 := hasDerivWithinAt_id 0 (Ici 0)
+    exact HasDerivWithinAt.congr this (by norm_num) abs_zero
     done
   have h2 : HasDerivWithinAt (fun x : ℝ ↦ |x|) (-1) (Iic 0) 0 := by
-    sorry
+    have : HasDerivWithinAt (-id : ℝ → ℝ) (-1) (Iic 0) 0 := by
+      sorry
+    apply HasDerivWithinAt.congr this (by norm_num) (by norm_num)
     done
   have h3 : UniqueDiffWithinAt ℝ (Ici (0 : ℝ)) 0 := by
     sorry
