@@ -1,0 +1,267 @@
+/-
+# Overall Points: 30/30
+
+* To see all points search for `TA Points` in this file
+
+* To see all comments search for `TA Comment` in this file
+
+-/
+
+import Mathlib.Algebra.CharP.Lemmas
+import Mathlib.Analysis.Normed.Ring.Lemmas
+import Mathlib.Data.Nat.Choose.Dvd
+import Mathlib.GroupTheory.Index
+import Mathlib.GroupTheory.OrderOfElement
+import Mathlib.Tactic.Group
+
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
+/-! # Exercises to practice -/
+
+variable {G H K : Type*} [Group G] [Group H] [Group K]
+open Subgroup
+
+-- Prove that the trivial subgroup of the integers has index zero.
+example : (⊥ : AddSubgroup ℤ).index = 0 := by
+  simp only [AddSubgroup.index_bot, Nat.card_eq_zero_of_infinite]
+
+/- State and prove that the preimage of `U` under the composition of `φ` and `ψ` is a preimage
+of a preimage of `U`. This should be an equality of subgroups! -/
+example (φ : G →* H) (ψ : H →* K) (U : Subgroup K) : sorry := sorry
+
+/- State and prove that the image of `S` under the composition of `φ` and `ψ`
+is a image of an image of `S`. -/
+example (φ : G →* H) (ψ : H →* K) (S : Subgroup G) : sorry := sorry
+
+
+/- A ring has characteristic `p` if `1 + ⋯ + 1 = 0`, where we add `1` `p` times to itself.
+This is written `CharP` in Lean.
+In a module over a ring with characteristic 2, for every element `m` we have `m + m = 0`. -/
+example {R M : Type*} [Ring R] [AddCommGroup M] [Module R M] [CharP R 2] (m : M) :
+    m + m = 0 := by
+  sorry
+  done
+
+section Frobenius
+variable (p : ℕ) [hp : Fact p.Prime] (R : Type*) [CommRing R] [CharP R p]
+/- Let's define the Frobenius morphism `x ↦ x ^ p`.
+You can use lemmas from the library.
+We state that `p` is prime using `Fact p.Prime`.
+This allows type-class inference to see that this is true.
+You can access the fact that `p` is prime using `hp.out`. -/
+
+def frobeniusMorphism (p : ℕ) [hp : Fact p.Prime] (R : Type*) [CommRing R] [CharP R p] :
+  R →+* R := sorry
+
+@[simp] lemma frobeniusMorphism_def (x : R) : frobeniusMorphism p R x = x ^ p := sorry
+
+/- Prove the following equality for iterating the frobenius morphism. -/
+lemma iterate_frobeniusMorphism (n : ℕ) (x : R) : (frobeniusMorphism p R)^[n] x = x ^ p ^ n := by
+  sorry
+  done
+
+/- Show that the Frobenius morphism is injective on a domain. -/
+lemma frobeniusMorphism_injective [IsDomain R] :
+    Function.Injective (frobeniusMorphism p R) := by
+  sorry
+  done
+
+/- Show that the Frobenius morphism is bijective on a finite domain. -/
+lemma frobeniusMorphism_bijective [IsDomain R] [Finite R] :
+    Function.Bijective (frobeniusMorphism p R) := by
+  sorry
+  done
+
+example [IsDomain R] [Finite R] (k : ℕ) (x : R) : x ^ p ^ k = 1 ↔ x = 1 := by
+  sorry
+  done
+
+example {R : Type*} [CommRing R] [IsDomain R] [Finite R] [CharP R 2] (x : R) : IsSquare x := by
+  sorry
+  done
+
+end Frobenius
+
+section Ring
+variable {R : Type*} [CommRing R]
+
+
+/- Let's define ourselves what it means to be a unit in a ring and then
+prove that the units of a ring form a group.
+Hint: I recommend that you first prove that the product of two units is again a unit,
+and that you define the inverse of a unit separately using `Exists.choose`.
+Hint 2: to prove associativity, use something like `intros; ext; apply mul_assoc`
+(`rw` doesn't work well because of the casts) -/
+
+#check Exists.choose
+#check Exists.choose_spec
+def IsAUnit (x : R) : Prop := ∃ y, y * x = 1
+
+def IsAUnit.mul {x y : R} (hx : IsAUnit x) (hy : IsAUnit y) : IsAUnit (x * y) := by
+  sorry
+  done
+
+instance groupUnits : Group {x : R // IsAUnit x} := sorry
+
+-- you have the correct group structure if this is true by `rfl`
+example (x y : {x : R // IsAUnit x}) : (↑(x * y) : R) = ↑x * ↑y := by sorry
+
+end Ring
+
+
+/-! # Exercises to hand in -/
+
+section conjugate
+
+-- **TA Points: 4/4**
+/- Define the conjugate of a subgroup, as the elements of the form `xhx⁻¹` for `h ∈ H`. -/
+def conjugate (x : G) (H : Subgroup G) : Subgroup G where
+  carrier := {x * h * x⁻¹ | h ∈ H}
+  mul_mem' := by
+    simp
+    intro g₁ g₂ h₁ hh₁ hh₁g₁ h₂ hh₂ hh₂g₂
+    use h₁ * h₂
+    simp only [H.mul_mem hh₁ hh₂, ← hh₁g₁, ← hh₂g₂, conj_mul, and_true]
+    -- *TA Comment:* you don't need to squeeze terminal `simp`s, i.e. you don't need to turn a
+    -- `simp` that finishes a proof into a `simp only`
+  one_mem' := by simp
+  inv_mem' := by
+    simp
+    intro h hh
+    use h⁻¹
+    simp only [inv_mem_iff, hh, mul_assoc, and_self]
+
+-- **TA Points: 3/3**
+-- Characterise normal subgroups in terms of your definition.
+example {H : Subgroup G} : H.Normal ↔ ∀ x : G, ∀ y ∈ conjugate x H, y ∈ H := by
+  constructor
+  · -- *TA Comment:* if you already do the `simp` here, then you can combine the `intro`s
+    intro hHNormal
+    simp [conjugate]
+    intro g h hh
+    exact hHNormal.1 h hh g
+  · simp [conjugate]
+    intro hHNormal'
+    refine { conj_mem := ?_ }
+    intro h hh g
+    exact hHNormal' g h hh
+
+/- Prove the following lemmas. In the language of group action (next Tuesday), they prove that
+a group acts on its own subgroups by conjugation. -/
+
+-- **TA Points: 1/1**
+lemma conjugate_one (H : Subgroup G) : conjugate 1 H = H := by
+  ext h
+  simp [conjugate]
+  done
+
+-- **TA Points: 2/2**
+lemma conjugate_mul (x y : G) (H : Subgroup G) :
+    conjugate (x * y) H = conjugate x (conjugate y H) := by
+  simp [conjugate, mul_assoc] -- *TA Comment:* nice and short!
+  done
+
+end conjugate
+
+section finite
+
+section
+
+variable {G : AddSubgroup ℚ}
+
+-- In this section, you will prove a nice group theory fact: `(ℚ, +)` has no non-trivial subgroup
+-- of finite index: any finite index subgroup must be `⊤`. Follow the steps below.
+
+-- In the proof we will consider the following subgroup, consisting of all `n`-fold multiples
+-- of rational numbers.
+-- **TA Points: 4/4**
+def multiple (n : ℕ) : AddSubgroup ℚ where
+  carrier := {n * r | r}
+  add_mem' := by
+    simp
+    intro x₁ x₂ r₁ h₁ r₂ h₂
+    use r₁ + r₂
+    rw [← h₁, ← h₂, mul_add]
+  zero_mem' := by simp
+  neg_mem' := by
+    simp
+    intro r
+    use -r
+    apply mul_neg
+
+-- If your definition above is correct, this proof is true by rfl.
+lemma mem_multiple_iff (n : ℕ) (q : ℚ) : q ∈ multiple n ↔ ∃ r, n * r = q := by rfl
+
+-- The next lemma is a general fact from group theory: use mathlib to find the right lemma.
+-- Hint: it's similar to `Subgroup.pow_index_mem`.
+
+-- **TA Points: 2/2**
+lemma step1 {n : ℕ} (hG : G.index = n) (q : ℚ) : n • q ∈ G := by
+  rw [← hG]
+  exact AddSubgroup.nsmul_index_mem G q
+
+-- **TA Points: 1/1**
+lemma step2 {n : ℕ} (hG : G.index = n) : multiple n ≤ G := by
+  intro q ⟨r,hnrq⟩
+  rw [← hnrq, ← smul_eq_mul]
+  exact step1 hG r
+
+-- **TA Points: 1/1**
+lemma step3 {n : ℕ} (hn : n ≠ 0) : multiple n = ⊤ := by
+  ext q
+  simp
+  use q/n
+  field_simp
+
+-- **TA Points: 2/2**
+-- The goal of this exercise: (ℚ, +) has no non-trivial subgroups of finite index.
+example (hG : G.index ≠ 0) : G = ⊤ := by
+  rw [← step3 hG]
+  ext q
+  constructor
+  · intro hq
+    use q/G.index
+    field_simp
+  · apply step2 rfl
+end
+
+end finite
+
+section frobenius
+
+/- The Frobenius morphism in a domain of characteristic `p` is the map `x ↦ x ^ p`.
+Let's prove that the Frobenius morphism is additive, without using that
+fact from the library. A proof sketch is given, and the following results will be useful. -/
+
+#check add_pow
+#check CharP.cast_eq_zero_iff
+
+-- **TA Points: 10/10**
+variable (p : ℕ) [hp : Fact p.Prime] (R : Type*) [CommRing R] [IsDomain R] [CharP R p] in
+open Nat Finset in
+lemma add_pow_eq_pow_add_pow (x y : R) : (x + y) ^ p = x ^ p + y ^ p := by
+  have hp' : p.Prime := hp.out
+  have range_eq_insert_Ioo : range p = insert 0 (Ioo 0 p) := by
+    rw [range_eq_Ico, Ioo_insert_left]
+    exact pos_of_neZero p
+  have dvd_choose : ∀ i ∈ Ioo 0 p, p ∣ Nat.choose p i := by
+    simp only [mem_Ioo]
+    intro i ⟨h0i, hip⟩
+    exact Prime.dvd_choose_self hp' (ne_zero_of_lt h0i) hip
+  have h6 : ∑ i ∈ Ioo 0 p, x ^ i * y ^ (p - i) * Nat.choose p i = 0 :=
+    calc
+     _ = ∑ i ∈ Ioo 0 p, x ^ i * y ^ (p - i) * 0 := by
+          apply sum_congr rfl
+          intro i hi
+          congr
+          apply (CharP.cast_eq_zero_iff R p (p.choose i)).mpr
+          -- *TA Comment:* you're using `.mpr` to turn a rewrite-lemma into an apply-lemma, so you
+          -- could simply rewrite with it
+          exact dvd_choose i hi
+     _ = 0 := by
+          simp only [mul_zero, sum_const_zero]
+  simp [add_pow, range_add_one]
+  simp [range_eq_insert_Ioo, h6]
+  done
+
+end frobenius
