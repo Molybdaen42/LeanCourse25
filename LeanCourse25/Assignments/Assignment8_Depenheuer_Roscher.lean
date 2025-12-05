@@ -3,6 +3,10 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 noncomputable section
 open BigOperators Function Set Real Filter Classical Topology TopologicalSpace
 
+
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
+
 /-! # Exercises to practice -/
 
 section
@@ -17,7 +21,8 @@ example [TopologicalSpace X] [TopologicalSpace Y] (f : X ≃ₜ Y) (x : X) : (�
 end
 
 example : Differentiable ℝ (fun x ↦ Real.exp (x ^ 2) * Real.sin (x ^ 5 + 3) - 2) := by
-  sorry
+  simp
+  exact Differentiable.mul (by simp) (by simp)
 
 example (x : ℝ) :
     deriv (fun x ↦ Real.exp (x ^ 2)) x = 2 * x * Real.exp (x ^ 2) := by
