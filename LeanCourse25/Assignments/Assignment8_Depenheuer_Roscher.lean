@@ -105,14 +105,13 @@ example {X : Type*} [MetricSpace X] {x : X} : ⋂ i ∈ {s : Set X | IsOpen s �
 
 
 /- This is a copy of `mono_exercise_part1` above. See the comments there for more info. -/
+#check intermediate_value_uIcc
+#check uIcc_of_le
+#check mem_uIcc
 variable (α : Type*) [ConditionallyCompleteLinearOrder α]
   [TopologicalSpace α] [OrderTopology α] [DenselyOrdered α] in
 lemma mono_exercise_part1_copy {f : α → α} (hf : Continuous f) (h2f : Injective f) {a b x : α}
     (hab : a ≤ b) (h2ab : f a < f b) (hx : a ≤ x) : f a ≤ f x := by
-
-  -- intermediate_value_uIcc
-  -- uIcc_of_le
-  -- mem_uIcc
   sorry
   done
 
@@ -145,10 +144,6 @@ The following lemmas will be useful
 * `HasDerivWithinAt.derivWithin`
 * `DifferentiableAt.derivWithin`.
 -/
-#check HasDerivWithinAt.congr
-#check uniqueDiffWithinAt_convex
-#check HasDerivWithinAt.derivWithin
-#check DifferentiableAt.derivWithin
 
 example : ¬ DifferentiableAt ℝ (fun x : ℝ ↦ |x|) 0 := by
   intro h
@@ -158,15 +153,21 @@ example : ¬ DifferentiableAt ℝ (fun x : ℝ ↦ |x|) 0 := by
     done
   have h2 : HasDerivWithinAt (fun x : ℝ ↦ |x|) (-1) (Iic 0) 0 := by
     have : HasDerivWithinAt (-id : ℝ → ℝ) (-1) (Iic 0) 0 := by
-      sorry
+      apply HasDerivWithinAt.neg
+      exact hasDerivWithinAt_id 0 (Iic 0)
     apply HasDerivWithinAt.congr this (by norm_num) (by norm_num)
     done
   have h3 : UniqueDiffWithinAt ℝ (Ici (0 : ℝ)) 0 := by
-    sorry
+    apply uniqueDiffWithinAt_convex (convex_Ici 0)
+    all_goals simp
     done
   have h4 : UniqueDiffWithinAt ℝ (Iic (0 : ℝ)) 0 := by
-    sorry
+    apply uniqueDiffWithinAt_convex (convex_Iic 0)
+    all_goals simp
     done
-  sorry
-
-end
+  have := DifferentiableAt.derivWithin h h3
+  rw [← DifferentiableAt.derivWithin h h4] at this
+  rw [HasDerivWithinAt.derivWithin h1 h3] at this
+  rw [HasDerivWithinAt.derivWithin h2 h4] at this
+  norm_num at this
+  end
