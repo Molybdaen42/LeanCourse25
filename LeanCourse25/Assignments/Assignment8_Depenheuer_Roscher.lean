@@ -26,7 +26,8 @@ example : Differentiable ℝ (fun x ↦ Real.exp (x ^ 2) * Real.sin (x ^ 5 + 3) 
 
 example (x : ℝ) :
     deriv (fun x ↦ Real.exp (x ^ 2)) x = 2 * x * Real.exp (x ^ 2) := by
-  sorry
+  simp
+  ring
   done
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
@@ -105,26 +106,47 @@ example {X : Type*} [MetricSpace X] {x : X} : ⋂ i ∈ {s : Set X | IsOpen s �
 
 
 /- This is a copy of `mono_exercise_part1` above. See the comments there for more info. -/
-#check intermediate_value_uIcc
-#check uIcc_of_le
-#check mem_uIcc
 variable (α : Type*) [ConditionallyCompleteLinearOrder α]
   [TopologicalSpace α] [OrderTopology α] [DenselyOrdered α] in
 lemma mono_exercise_part1_copy {f : α → α} (hf : Continuous f) (h2f : Injective f) {a b x : α}
     (hab : a ≤ b) (h2ab : f a < f b) (hx : a ≤ x) : f a ≤ f x := by
-  sorry
+  have ha_lt_b : a < b := lt_of_le_of_ne hab fun a_1 => (ne_of_lt h2ab) (congrArg f a_1)
+  by_contra hcontra
+  rw [not_le] at hcontra
+  -- suppose a ≤ x, a ≤ b s.t. f(x) < f(a) < f(b)
+  -- Since f(a) ≠ f(x), we know that a < x
+  have ha_lt_x : a < x := by
+    have : f a ≠ f x := (ne_of_lt hcontra).symm
+    exact lt_of_le_of_ne hx fun a_1 => this (congrArg f a_1)
+  -- use the IVT on the interval uIcc x b
+  have hIVT : uIcc (f x) (f b) ⊆ f '' uIcc x b :=
+    intermediate_value_uIcc (Continuous.continuousOn hf)
+  have : f a ∈ uIcc (f x) (f b) := by
+    simp [mem_uIcc]; left; exact ⟨le_of_lt hcontra, le_of_lt h2ab⟩
+  -- It gives us some x' ∈ uIcc x b with f(x') = f(a)
+  obtain ⟨x',hx', hfx'_eq_fa⟩ := hIVT this
+  -- This gives us a contradiction by injectivity of f:
+  -- on the one hand, a ∈ uIcc x b...
+  have : a = x' := h2f (h2f (congrArg f hfx'_eq_fa.symm))
+  rw [← this] at hx'
+  -- but on the other hand, a ∉ uIcc x b
+  have hc2 : a ∉ uIcc x b := by exact notMem_uIcc_of_lt ha_lt_x ha_lt_b
+  contradiction
   done
 
 example (x y : ℝ) :
     let f := fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y
     fderiv ℝ f (x, y) (1, 0) = 2 * x + y := by
   simp
-  --have : fderiv ℝ (fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y) = fun (x,y) ↦ (2*x+y,x) := by sorry
-  --apply HasFDerivAt.fderiv
-  --#check HasFDerivAt
-  --have : HasFDerivAt (fun ((x,y) : ℝ × ℝ) ↦ x^2 + x * y) (fun ((x,y): ℝ × ℝ) ↦ 2*x + y) := by sorry
-  -- hasFDerivAt_iff_hasDerivAt
-  sorry
+  rw [fderiv_fun_add, ContinuousLinearMap.add_apply]
+  · congr
+    · simp_rw [sq]
+      rw [fderiv_fun_mul differentiableAt_fst differentiableAt_fst, fderiv_fst]
+      simp [two_mul]
+    · rw [fderiv_fun_mul differentiableAt_fst differentiableAt_snd, fderiv_fst, fderiv_snd]
+      simp
+  · simp
+  · simp
 
 section
 
