@@ -11,6 +11,8 @@ noncomputable section
 
 /-! # Exercises to practice -/
 
+-- **Submission of Nora Depenheuer and Joachim Roscher**
+
 section
 
 /- There are special cases of the change of variables theorems for affine transformations
@@ -110,7 +112,12 @@ def A : ℕ → ℕ → ℕ
 | m + 1, 0     => A m 1
 | m + 1, n + 1 => A m (A (m + 1) n)
 
+#check Nat.rec
+
 def myA : ℕ → ℕ → ℕ :=
+  --ToDo: Wie kann man das Folgende auf zwei Variablen verallgemeinern? - Joachim
+  Nat.rec (motive := fun _ ↦ ℕ) 1
+    (fun m fac_n ↦ A m 1)
   sorry
 
 example : A = myA := by
