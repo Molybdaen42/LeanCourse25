@@ -115,9 +115,12 @@ def A : ℕ → ℕ → ℕ
 #check Nat.rec
 
 def myA : ℕ → ℕ → ℕ :=
-  --ToDo: Wie kann man das Folgende auf zwei Variablen verallgemeinern? - Joachim
-  Nat.rec (motive := fun _ ↦ ℕ) 1
-    (fun m fac_n ↦ A m 1)
+  -- Die Zeilen 120-123 sind noch nur sketchy, aber ich verstehe dennoch nicht, warum der Fehler ausgeworfen wird.
+  Nat.rec (motive := fun _ ↦ ℕ → ℕ) (fun (n : ℕ) ↦ n+1)
+    (fun m Am ↦ (fun
+      | 0 => Am 1
+      | n+1 => Am (A (m+1) n)
+                ))
   sorry
 
 example : A = myA := by
