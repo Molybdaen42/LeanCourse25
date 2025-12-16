@@ -95,7 +95,20 @@ Also work on your project.
 /- Prove the following using the change of variables theorem. -/
 lemma change_of_variables_exercise (f : ℝ → ℝ) :
     ∫ x in 0..π, sin x * f (cos x) = ∫ y in -1..1, f y := by
-  sorry
+  simp_rw [mul_comm]
+  have h : ∀ x ∈ uIcc 0 π, HasDerivAt cos (-sin x) x := fun x a ↦ hasDerivAt_cos x
+  have h' : ContinuousOn (-sin) (uIcc 0 π) := continuousOn_neg_iff.2 continuousOn_sin
+  have hf : ContinuousOn f (cos '' [[0, π]]) := by
+    have : cos '' [[0, π]] = Icc (-1) 1 := by
+      rw [uIcc, min_eq_left_of_lt pi_pos, max_eq_right_of_lt pi_pos]
+      exact BijOn.image_eq bijOn_cos
+    rw [this]
+    -- Don't we have to assume this?
+    sorry
+  have := intervalIntegral.integral_comp_mul_deriv' h h' hf
+  simp [neg_eq_iff_eq_neg] at this
+  rw [← integral_symm] at this
+  exact this
   done
 
 
@@ -115,14 +128,19 @@ def A : ℕ → ℕ → ℕ
 #check Nat.rec
 
 def myA : ℕ → ℕ → ℕ :=
-  -- Die Zeilen 120-123 sind noch nur sketchy, aber ich verstehe dennoch nicht, warum der Fehler ausgeworfen wird.
-  Nat.rec (motive := fun _ ↦ ℕ → ℕ) (fun (n : ℕ) ↦ n+1)
-    (fun m Am ↦ (fun
-      | 0 => Am 1
-      | n+1 => Am (A (m+1) n)
-                ))
-  sorry
+  Nat.rec (motive := fun _ ↦ ℕ → ℕ) (fun n ↦ n+1)
+    fun m Am ↦
+      Nat.rec (motive := fun _ ↦ ℕ) (Am 1)
+        fun n Amn ↦ Am Amn
 
 example : A = myA := by
-  sorry
+  -- rfl
+  ext m n
+  induction m with
+  | zero => simp [A,myA]
+  | succ m hm =>
+      induction n with
+      | zero => sorry -- hm müsste für alle n' gelten, nicht nur für n'=n
+                      -- => andere Induktionsart wählen.
+      | succ n hn => sorry
   done
