@@ -51,17 +51,18 @@ example (a b : ℝ) (ha : 0 < a) (hb : 0 < b) :
 /- Define tetration `n ↑↑ k = n^n^n^...^n` (`k` copies of `n`) on the natural numbers
 recursively using `Nat.rec`. It is defined to be `1` when `k = 0`. -/
 
-def tetration : sorry :=
-  sorry
+def tetration : ℕ → ℕ → ℕ :=
+  fun n ↦ Nat.rec (motive := fun _ ↦ ℕ) 1
+    (fun k tetr_k ↦ n ^ tetr_k)
 
 
 -- Uncomment these to test whether your function is (probably) correct.
--- example : tetration 2 4 = 65536 := rfl
--- example : tetration 3 3 = 7625597484987 := rfl
--- example : tetration 5 1 = 5 := rfl
--- example : tetration 0 5 = 0 := rfl
--- example : tetration 5 0 = 1 := rfl
--- example : tetration 0 0 = 1 := rfl
+example : tetration 2 4 = 65536 := rfl
+example : tetration 3 3 = 7625597484987 := rfl
+example : tetration 5 1 = 5 := rfl
+example : tetration 0 5 = 0 := rfl
+example : tetration 5 0 = 1 := rfl
+example : tetration 0 0 = 1 := rfl
 
 /- In class we mentioned that if Disjunction could eliminate to
 types, this would lead to a contradiction. Proof this.
@@ -95,20 +96,21 @@ Also work on your project.
 /- Prove the following using the change of variables theorem. -/
 lemma change_of_variables_exercise (f : ℝ → ℝ) :
     ∫ x in 0..π, sin x * f (cos x) = ∫ y in -1..1, f y := by
-  simp_rw [mul_comm]
-  have h : ∀ x ∈ uIcc 0 π, HasDerivAt cos (-sin x) x := fun x a ↦ hasDerivAt_cos x
-  have h' : ContinuousOn (-sin) (uIcc 0 π) := continuousOn_neg_iff.2 continuousOn_sin
-  have hf : ContinuousOn f (cos '' [[0, π]]) := by
-    have : cos '' [[0, π]] = Icc (-1) 1 := by
-      rw [uIcc, min_eq_left_of_lt pi_pos, max_eq_right_of_lt pi_pos]
-      exact BijOn.image_eq bijOn_cos
-    rw [this]
-    -- Don't we have to assume this?
-    sorry
-  have := intervalIntegral.integral_comp_mul_deriv' h h' hf
-  simp [neg_eq_iff_eq_neg] at this
-  rw [← integral_symm] at this
-  exact this
+  simp [intervalIntegral_eq_integral_uIoc, pi_nonneg, ← integral_Icc_eq_integral_Ioc]
+  have hs : MeasurableSet (Icc 0 π) := measurableSet_Icc
+  have hg' : ∀ x ∈ Icc 0 π, HasDerivWithinAt cos (-sin x) (Icc 0 π) x := by
+    intro x hx
+    apply HasDerivAt.hasDerivWithinAt
+    exact hasDerivAt_cos x
+  have hg : InjOn cos (Icc 0 π) := injOn_cos
+  have h := integral_image_eq_integral_abs_deriv_smul hs hg' hg f
+  simp [BijOn.image_eq bijOn_cos] at h
+  rw [h]
+  apply setIntegral_congr_fun hs
+  simp [EqOn]
+  intro x hx_nonneg hx_le_pi
+  left
+  exact (abs_eq_self.2 (sin_nonneg_of_nonneg_of_le_pi hx_nonneg hx_le_pi)).symm
   done
 
 
@@ -125,8 +127,6 @@ def A : ℕ → ℕ → ℕ
 | m + 1, 0     => A m 1
 | m + 1, n + 1 => A m (A (m + 1) n)
 
-#check Nat.rec
-
 def myA : ℕ → ℕ → ℕ :=
   Nat.rec (motive := fun _ ↦ ℕ → ℕ) (fun n ↦ n+1)
     fun m Am ↦
@@ -134,13 +134,13 @@ def myA : ℕ → ℕ → ℕ :=
         fun n Amn ↦ Am Amn
 
 example : A = myA := by
-  -- rfl
-  ext m n
+  apply funext₂
+  intro m
   induction m with
-  | zero => simp [A,myA]
+  | zero => simp [A, myA]
   | succ m hm =>
+      intro n
       induction n with
-      | zero => sorry -- hm müsste für alle n' gelten, nicht nur für n'=n
-                      -- => andere Induktionsart wählen.
-      | succ n hn => sorry
+      | zero => simp [A, myA, hm]
+      | succ n hn => simp [A, myA, hn, hm]
   done
