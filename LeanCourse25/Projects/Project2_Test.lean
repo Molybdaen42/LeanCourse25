@@ -1,10 +1,10 @@
 import Mathlib.Topology.Basic
 import Mathlib.RingTheory.Real.Irrational
+import Mathlib.Topology.Constructions
 open Topology Real
 
 def I : Set Real := Set.Icc 0 1
-#check TopologicalSpace.mk
-lemma I_TopSp : TopologicalSpace I := by sorry
+instance instTopologicalSpaceI : TopologicalSpace I := instTopologicalSpaceSubtype
 
-def kleinBottle [TopologicalSpace I] : Type* := sorry
+def kleinBottle : Type := sorry --Quotient.mk I
 --instTopologicalSpaceQuotient
