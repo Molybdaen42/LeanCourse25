@@ -2,6 +2,8 @@ import Mathlib.Topology.Basic
 import Mathlib.RingTheory.Real.Irrational
 import Mathlib.Topology.Constructions
 import Mathlib.Topology.Homotopy.Equiv
+import Mathlib.Analysis.Complex.Circle
+import Mathlib.Analysis.SpecialFunctions.Complex.Log
 open Topology Real
 
 section MobiusStrip
@@ -44,7 +46,7 @@ def MobiusStrip := Quotient MobiusStrip.setoid
 instance MobiusStrip.instTopologicalSpace : --ToDo: Namen ändern
   TopologicalSpace MobiusStrip := instTopologicalSpaceQuotient
 
-def Circle.setoid : Setoid I where
+def myCircle.setoid : Setoid I where
   r x y := x=y ∨ (x=0 ∧ y=1) ∨ (x=1 ∧ y=0)
   iseqv := {
     refl x := by simp
@@ -61,21 +63,22 @@ def Circle.setoid : Setoid I where
         nth_rw 2 [eq_comm]
         assumption
   }
-def Circle := Quotient Circle.setoid
-instance Circle.instTopologicalSpace :
-  TopologicalSpace Circle := instTopologicalSpaceQuotient
+def myCircle := Quotient myCircle.setoid
+instance myCircle.instTopologicalSpace :
+  TopologicalSpace myCircle := instTopologicalSpaceQuotient
 
---lemma Circle_is_circle : Circle ≃ Complex.Circle := by sorry
+lemma myCircle_is_circle : myCircle ≃ Circle := by sorry
 
 
-noncomputable def MobiusStrip_htpy_equiv_to_circle : ContinuousMap.HomotopyEquiv MobiusStrip Circle where
+noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
+    ContinuousMap.HomotopyEquiv MobiusStrip myCircle where
   toFun := {
     /- The lifted map is ˋfun (x,y) ↦ ⟦y⟧ˋ.-/
     toFun := Quotient.lift (Quotient.mk'' ∘ Prod.snd) (by
       intro ⟨x,t⟩ ⟨y,s⟩
       simp only [← Quotient.eq_iff_equiv, Quotient.eq, MobiusStrip.setoid, Function.comp_apply]
       rw [Quotient.eq'']
-      simp only [Circle.setoid]
+      simp only [myCircle.setoid]
       gcongr
       · simp
       · intro h
@@ -90,7 +93,7 @@ noncomputable def MobiusStrip_htpy_equiv_to_circle : ContinuousMap.HomotopyEquiv
       intro x y
       simp
       rw [Quotient.eq'', ← Quotient.eq_iff_equiv, Quotient.eq]
-      simp [Circle.setoid, MobiusStrip.setoid]
+      simp [myCircle.setoid, MobiusStrip.setoid]
       norm_num
       )
     continuous_toFun := by
@@ -100,10 +103,35 @@ noncomputable def MobiusStrip_htpy_equiv_to_circle : ContinuousMap.HomotopyEquiv
   }
   left_inv := by
     let f : ℝ × ℝ → ℝ := fun (t,x) ↦ t/2 + (1-t)*x
-    have hf : ∀ t ∈ I, ∀ x ∈ I, f (t,x) ∈ I := by sorry
+    have hf : ∀ t ∈ I, ∀ x ∈ I, f (t,x) ∈ I := by
+      intro t ⟨ht1, ht2⟩ x ⟨hx1, hx2⟩
+      simp_all [f]
+      constructor
+      · sorry
+      · sorry
     use {
-      toFun x := ⟦(⟨f (x.1,x.2.out.1),by sorry /-apply hf-/⟩,x.2.out.2)⟧
-      continuous_toFun := sorry
+      toFun  := (fun x ↦ fun y ↦ ⟦(⟨f (x,y.out.1),by sorry /-apply hf-/⟩,y.out.2)⟧).uncurry
+      continuous_toFun := by
+        --simp [f]
+
+
+        sorry
+        /-apply Continuous.comp₂ continuous_quotient_mk'
+        · apply Continuous.subtype_mk --Hier liegt der Fehler
+          simp [f]
+          apply Continuous.add
+          · apply Continuous.div_const (Continuous.fst' continuous_subtype_val)
+          apply Continuous.mul
+          · apply Continuous.sub continuous_const (Continuous.fst' continuous_subtype_val)
+          apply Continuous.subtype_val
+          apply Continuous.fst
+          apply Continuous.snd'
+          -- Ist das überhaupt wahr? Nein, oder?
+          sorry
+        · apply Continuous.subtype_mk
+
+          sorry
+        -/
     }
     · simp
       sorry
@@ -117,5 +145,26 @@ noncomputable def MobiusStrip_htpy_equiv_to_circle : ContinuousMap.HomotopyEquiv
     · apply Quotient.ind
       simp
     · exact fun x ↦ rfl
+
+noncomputable def e : myCircle ≃ Circle where
+  toFun x := Circle.exp (x.out*2*π)
+  invFun z := ⟦⟨((Complex.log z).im + π) / (2*π), by --Das +π ist sehr weird und wahrscheinlich falsch
+    apply unitInterval.div_mem
+    · linarith [Complex.neg_pi_lt_log_im z]
+    · linarith [pi_nonneg]
+    · linarith [Complex.log_im_le_pi z]
+    ⟩⟧
+  left_inv x := by
+    simp [Complex.log_im]
+    #check Complex.arg_exp_mul_I
+    sorry
+  right_inv := sorry
+
+noncomputable def MobiusStrip_htpy_equiv_to_Circle :
+    ContinuousMap.HomotopyEquiv MobiusStrip Circle where
+  toFun := sorry
+  invFun := sorry
+  left_inv := by sorry
+  right_inv := by sorry
 
 end MobiusStrip
