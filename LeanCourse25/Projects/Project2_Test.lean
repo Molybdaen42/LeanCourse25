@@ -67,7 +67,7 @@ def myCircle := Quotient myCircle.setoid
 instance myCircle.instTopologicalSpace :
   TopologicalSpace myCircle := instTopologicalSpaceQuotient
 
-lemma myCircle_is_circle : myCircle ≃ Circle := by sorry
+def myCircle_is_circle : myCircle ≃ Circle := sorry
 
 
 noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
@@ -102,30 +102,50 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       apply Continuous.prodMk_right
   }
   left_inv := by
-    let f : ℝ × ℝ → ℝ := fun (t,x) ↦ t/2 + (1-t)*x
-    have hf : ∀ t ∈ I, ∀ x ∈ I, f (t,x) ∈ I := by
-      intro t ⟨ht1, ht2⟩ x ⟨hx1, hx2⟩
-      simp_all [f]
-      constructor
-      · sorry
-      · sorry
+    let f : I × I → I := fun (t,x) ↦
+      ⟨(1-t)/2 + t*x, by
+        have ⟨ht1,ht2⟩ := t.prop
+        have ⟨hx1,hx2⟩ := x.prop
+        constructor
+        · apply add_nonneg (by linarith)
+          sorry
+          --apply mul_nonneg (sub_nonneg.2 ht2) hx1
+        · sorry
+          /-rw [one_sub_mul, add_sub, sub_le_iff_le_add, add_comm, ← mul_one_div]
+          by_cases hx : x.val ≥ 1/2
+          · gcongr
+          · calc
+              _ ≤ 1/2 + t.val*(1/2) := by linarith
+              _ ≤ 1/2 + 1/2         := by linarith
+              _ = 1                 := by norm_num
+              _ ≤ 1 + t*x           := by apply le_add_of_nonneg_right (mul_nonneg ht1 hx1)-/
+      ⟩
     use {
-      -- ((x,⟦(y₁,y₂)⟧) : I × MobiusStrip) ↦ ⟦()⟧
-      toFun := (fun x ↦
-        Quotient.lift fun (y₁,y₂) ↦
-          ⟦(⟨f (x,y₁), by exact hf x x.prop y₁ y₁.prop⟩, y₂)⟧
+      /- ((t,⟦(x,y)⟧) : I × MobiusStrip) ↦ ⟦(t/2 + (1-t)*x, y)⟧
+      is a homotopy from id to ⟦(x,y)⟧ ↦ ⟦(1/2, y)⟧ -/
+      toFun :=
+        fun x ↦ ⟦(f (x.1, x.2.out.1), x.2.out.2)⟧
+        /- (fun t ↦
+        Quotient.lift (fun (x,y) ↦
+          Quotient.mk'' (f (t,x), y))
           (by
-            sorry
+            intro (x₁,x₂) (y₁,y₂)
+            simp only [f, MobiusStrip.setoid, ← Quotient.eq_iff_equiv, Quotient.eq, Prod.mk.injEq]
+            rw [Quotient.eq'']
+            simp
+            gcongr ?_ ∨ ?_
+            · intro ⟨h1, h2⟩
+              simp [h1, h2]
+            · intro ⟨h1, h2⟩
+              simp [h1, h2]
+              ring
           )
-        ).uncurry
+        ).uncurry-/
       continuous_toFun := by
-        --simp [f]
-
 
         sorry
         /-apply Continuous.comp₂ continuous_quotient_mk'
         · apply Continuous.subtype_mk --Hier liegt der Fehler
-          simp [f]
           apply Continuous.add
           · apply Continuous.div_const (Continuous.fst' continuous_subtype_val)
           apply Continuous.mul
@@ -141,9 +161,20 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
         -/
     }
     · simp
-      sorry
-    · simp
-      sorry
+      apply Quotient.ind
+      intro (x,y)
+      apply Quotient.eq.mpr
+      simp [f, MobiusStrip.setoid]
+      norm_num
+      by_cases hy0 : y = 0
+      · simp [hy0]
+
+        sorry
+      by_cases hy1 : y = 1
+      · sorry
+      · -- if 0 < y < 1
+        sorry
+    · simp [f]
   right_inv := by
     use {
       toFun := Prod.snd
