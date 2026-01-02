@@ -110,7 +110,14 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       · sorry
       · sorry
     use {
-      toFun  := (fun x ↦ fun y ↦ ⟦(⟨f (x,y.out.1),by sorry /-apply hf-/⟩,y.out.2)⟧).uncurry
+      -- ((x,⟦(y₁,y₂)⟧) : I × MobiusStrip) ↦ ⟦()⟧
+      toFun := (fun x ↦
+        Quotient.lift fun (y₁,y₂) ↦
+          ⟦(⟨f (x,y₁), by exact hf x x.prop y₁ y₁.prop⟩, y₂)⟧
+          (by
+            sorry
+          )
+        ).uncurry
       continuous_toFun := by
         --simp [f]
 
