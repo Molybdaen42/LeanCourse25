@@ -6,7 +6,7 @@ import Mathlib.Analysis.Complex.Circle
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 open Topology Real
 
-section MobiusStrip
+
 /--
 The unit interval with it's canonical topology.
 -/
@@ -16,6 +16,7 @@ instance I.instTopologicalSpace : TopologicalSpace I := instTopologicalSpaceSubt
 abbrev I.zero_mem := unitInterval.zero_mem
 abbrev I.one_mem := unitInterval.one_mem
 
+section MobiusStrip
 /--
 (x,t) ∼ (y,s) ↔ (x,t)=(y,s) ∨ (((t = 0 ∧ s = 1) ∨ (t = 1 ∧ s = 0)) ∧ x = 1 - y)
 -/
@@ -43,7 +44,7 @@ def MobiusStrip.setoid : Setoid (I×I) where
         rw [hxz.1,hxy1.1]
   }
 def MobiusStrip := Quotient MobiusStrip.setoid
-instance MobiusStrip.instTopologicalSpace : --ToDo: Namen ändern
+instance MobiusStrip.instTopologicalSpace :
   TopologicalSpace MobiusStrip := instTopologicalSpaceQuotient
 
 def myCircle.setoid : Setoid I where
@@ -67,8 +68,10 @@ def myCircle := Quotient myCircle.setoid
 instance myCircle.instTopologicalSpace :
   TopologicalSpace myCircle := instTopologicalSpaceQuotient
 
+/-
+-- ToDo
 def myCircle_is_circle : myCircle ≃ Circle := sorry
-
+-/
 
 noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
     ContinuousMap.HomotopyEquiv MobiusStrip myCircle where
@@ -104,21 +107,21 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
   left_inv := by
     let f : I × I → I := fun (t,x) ↦
       ⟨(1-t)/2 + t*x, by
-        have ⟨ht1,ht2⟩ := t.prop
+        have ht1 : 0 ≤ 1-t.val := by exact unitInterval.one_minus_nonneg t
+        have ht2 : 1-t.val ≤ 1 := by exact unitInterval.one_minus_le_one t
         have ⟨hx1,hx2⟩ := x.prop
         constructor
         · apply add_nonneg (by linarith)
-          sorry
-          --apply mul_nonneg (sub_nonneg.2 ht2) hx1
-        · sorry
-          /-rw [one_sub_mul, add_sub, sub_le_iff_le_add, add_comm, ← mul_one_div]
+          apply mul_nonneg t.prop.1 hx1
+        · nth_rw 2 [(sub_sub_cancel 1 t.val).symm]
+          rw [one_sub_mul, add_sub, sub_le_iff_le_add, add_comm, ← mul_one_div]
           by_cases hx : x.val ≥ 1/2
           · gcongr
           · calc
-              _ ≤ 1/2 + t.val*(1/2) := by linarith
-              _ ≤ 1/2 + 1/2         := by linarith
-              _ = 1                 := by norm_num
-              _ ≤ 1 + t*x           := by apply le_add_of_nonneg_right (mul_nonneg ht1 hx1)-/
+              _ ≤ 1/2 + (1-t.val)*(1/2) := by linarith
+              _ ≤ 1/2 + 1/2             := by linarith
+              _ = 1                     := by norm_num
+              _ ≤ 1 + (1-t)*x           := by apply le_add_of_nonneg_right (mul_nonneg ht1 hx1)
       ⟩
     use {
       /- ((t,⟦(x,y)⟧) : I × MobiusStrip) ↦ ⟦(t/2 + (1-t)*x, y)⟧
@@ -168,11 +171,14 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       norm_num
       by_cases hy0 : y = 0
       · simp [hy0]
-
+        --have : MobiusStrip.setoid (⟦(x,0)⟧ : MobiusStrip).out (x,0) := Quotient.mk_out (x,0)
+        --simp [Quotient.out, Quot.out]
         sorry
       by_cases hy1 : y = 1
-      · sorry
+      · simp [hy1]
+        sorry
       · -- if 0 < y < 1
+        simp [hy0,hy1]
         sorry
     · simp [f]
   right_inv := by
@@ -184,6 +190,7 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       simp
     · exact fun x ↦ rfl
 
+/-
 noncomputable def e : myCircle ≃ Circle where
   toFun x := Circle.exp (x.out*2*π)
   invFun z := ⟦⟨((Complex.log z).im + π) / (2*π), by --Das +π ist sehr weird und wahrscheinlich falsch
@@ -204,5 +211,74 @@ noncomputable def MobiusStrip_htpy_equiv_to_Circle :
   invFun := sorry
   left_inv := by sorry
   right_inv := by sorry
+-/
 
 end MobiusStrip
+
+section KleinBottle
+/--
+(x,0) ∼ (1-x,1) and (0,y) ∼ (1,y)
+-/
+def KleinBottle.setoid : Setoid (I×I) where
+  r x y := x=y ∨
+    (((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)) ∧ x.1.val = 1 - y.1) ∨
+    (((x.1 = 0 ∧ y.1 = 1) ∨ (x.1 = 1 ∧ y.1 = 0)) ∧ x.2.val = y.2)
+  iseqv := {
+    refl x := by left;rfl
+    symm {x} {y} := by
+      gcongr ?_ ∨ (?_ ∧ ?_) ∨ (?_ ∧ ?_)
+      · exact eq_comm.mp
+      · simp only [and_comm, or_comm, imp_self]
+      · simp only [eq_sub_iff_add_eq, add_comm, imp_self]
+      · simp only [and_comm, or_comm, imp_self]
+      · exact eq_comm.mp
+    trans {x} {y} {z} hxy hxz := by
+      rcases hxy with hx_eq_y | hxy | hxy
+      · simp only [hx_eq_y, hxz]
+      all_goals
+        rcases hxz with hx_eq_z | hxz
+        try simp [← hx_eq_z, hxy]
+      · rcases hxy with ⟨hxy1|hxy1,hxy2⟩
+        all_goals
+          simp [hxy1] at hxz ⊢;
+          rw [hxy2, sub_right_inj]
+          rcases hxz with hxz | hxz
+          try
+            left
+            ext
+            rw [hxy2, hxz.2, sub_sub_cancel]
+            rw [hxz.1,hxy1.1]
+          right; left
+          try refine ⟨@Set.Icc.coe_eq_one.mp hxz.2.symm, ?_⟩
+          try refine ⟨@Set.Icc.coe_eq_zero.mp hxz.2.symm, ?_⟩
+
+          sorry
+      · rcases hxy with ⟨hxy1|hxy1,hxy2⟩
+        all_goals
+          simp [hxy1] at hxz ⊢;
+          try rw [hxy2, sub_right_inj]
+          rcases hxz with hxz | hxz | hxz
+          simp [← hxz, hxy1.2, and_self, hxy2]
+          try
+            simp [← hxz.2]
+            have := Set.Icc.coe_eq_zero.mp (sub_eq_self.mp hxz.2.symm)
+            left; ext
+            simp [this, hxy1.1]
+            simp [hxy2]
+
+          try simp [hxz.1]
+          /-try {
+            left; ext
+            · rw [hxy2, hxz.2, sub_sub_cancel]
+            · rw [hxz.1,hxy1.1]
+            done
+          }-/
+
+          sorry
+          sorry
+  }
+def KleinBottle := Quotient KleinBottle.setoid
+instance KleinBottle.instTopologicalSpace :
+  TopologicalSpace KleinBottle := instTopologicalSpaceQuotient
+
+end KleinBottle
