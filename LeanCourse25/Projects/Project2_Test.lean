@@ -18,10 +18,12 @@ abbrev I.one_mem := unitInterval.one_mem
 
 section MobiusStrip
 /--
-(x,t) ∼ (y,s) ↔ (x,t)=(y,s) ∨ (((t = 0 ∧ s = 1) ∨ (t = 1 ∧ s = 0)) ∧ x = 1 - y)
+The unit square I × I modulo
+(x,0) ∼ (1-x,1)
 -/
-def MobiusStrip.setoid : Setoid (I×I) where
-  r x y := x=y ∨
+def MobiusStrip.setoid : Setoid (I × I) where
+  r x y :=
+    x=y ∨
     (((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)) ∧ x.1 = (1 : ℝ) - y.1)
   iseqv := {
     refl x := by left;rfl
@@ -47,6 +49,109 @@ def MobiusStrip := Quotient MobiusStrip.setoid
 instance MobiusStrip.instTopologicalSpace :
   TopologicalSpace MobiusStrip := instTopologicalSpaceQuotient
 
+section MobiusStrip.embedding
+/--
+This creates a Möbius strip with a width of 1,
+whose centre line coincides with the unit circle of the xy plane.
+The angle α has its apex at the centre;
+as it changes, the variation of r leads to the area that spans between the single edge.
+-/
+noncomputable def MobiusStrip.embedding.map : MobiusStrip → ℝ×ℝ×ℝ := Quotient.lift
+  (fun (a,b) ↦
+    letI r := 2*a.val - 1  -- -1 ≤ r ≤ 1
+    letI α := 2*π*b.val    -- 0 ≤ α ≤ 2π
+    (
+    cos α * (1 + r/2 * cos (α/2)), -- x-coordinate
+    sin α * (1 + r/2 * cos (α/2)), -- y-coordinate
+    r/2 * sin (α/2)                -- z-coordinate
+  ))
+  -- Well-definedness:
+  (by
+    intro ⟨a₁,b₁⟩ ⟨a₂,b₂⟩ h
+    simp only [setoid, ← Quotient.eq_iff_equiv, Quotient.eq, Prod.mk.injEq] at *
+    rcases h with ⟨ha,hb⟩ | ⟨⟨hb₁,hb₂⟩ | ⟨hb₁,hb₂⟩,ha⟩
+    · -- If (a₁,b₁) = (a₁,b₂)
+      simp only [hb, ha, and_self]
+    -- If (a₁,b₁) ∼ (a₂,b₂) via the Möbius relation
+    all_goals
+      simp [hb₁, hb₂]
+      rw [ha]
+      ring
+  )
+
+lemma MobiusStrip.embedding.injective : Function.Injective map := by
+  apply Quotient.ind₂
+  intro a b
+  simp [map]
+  field_simp
+  intro hx hy hz
+  apply Quotient.eq.mpr
+  simp only [setoid] -- Can be removed (ToDo)
+  by_cases h2 : a.2 = b.2
+  · -- If a.2 = b.2, it follows that a = b
+    left
+    simp [Prod.ext_iff, h2]; ext
+    simp_all
+    rcases hz with hz|hz
+    · exact hz
+    by_cases hb2_le_one : b.2 = 1
+    · simp [hb2_le_one] at hx
+      exact hx
+    apply unitInterval.coe_ne_one.mpr at hb2_le_one
+    apply lt_of_le_of_ne b.2.prop.2 at hb2_le_one
+    apply (sin_eq_zero_iff_of_lt_of_lt
+      (lt_of_lt_of_le (neg_neg_iff_pos.mpr pi_pos) ((mul_nonneg_iff_of_pos_left pi_pos).mpr
+        b.2.prop.1))
+      (by rw [← propext (lt_inv_mul_iff₀ pi_pos), inv_mul_cancel₀ pi_ne_zero]; exact hb2_le_one)).mp
+      at hz
+    rw [mul_eq_zero_iff_left pi_ne_zero] at hz
+    simp [hz] at hx
+    exact hx
+  · right
+    sorry
+
+def MobiusStrip.embedding : Set (ℝ×ℝ×ℝ) := Set.range embedding.map
+
+noncomputable def MobiusStrip.embedding.equiv : MobiusStrip ≃ₜ embedding := by
+  apply Homeomorph.mk (Equiv.ofInjective map injective) ?_ ?_
+  · -- map is continuous
+    apply Continuous.subtype_coind
+    apply Continuous.quotient_lift
+    simp only [continuous_prodMk]
+    constructor
+    · apply Continuous.mul (Continuous.comp' continuous_cos ?_)
+      · apply Continuous.add continuous_const
+        apply Continuous.mul
+        · apply Continuous.div_const
+          apply Continuous.sub ?_ continuous_const
+          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
+        · apply Continuous.comp' continuous_cos ?_
+          apply Continuous.div_const
+          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+    constructor
+    · apply Continuous.mul (Continuous.comp' continuous_sin ?_)
+      · apply Continuous.add continuous_const
+        apply Continuous.mul
+        · apply Continuous.div_const
+          apply Continuous.sub ?_ continuous_const
+          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
+        · apply Continuous.comp' continuous_cos ?_
+          apply Continuous.div_const
+          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+    · apply Continuous.mul ?_ (Continuous.comp' continuous_sin ?_)
+      · apply Continuous.div_const
+        apply Continuous.sub ?_ continuous_const
+        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
+      · apply Continuous.div_const
+        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+  · -- map⁻¹ is continuous
+    sorry
+
+end MobiusStrip.embedding
+section MobiusStrip_htpy_equiv_to_Circle
+
 def myCircle.setoid : Setoid I where
   r x y := x=y ∨ (x=0 ∧ y=1) ∨ (x=1 ∧ y=0)
   iseqv := {
@@ -64,7 +169,9 @@ def myCircle.setoid : Setoid I where
         nth_rw 2 [eq_comm]
         assumption
   }
+
 def myCircle := Quotient myCircle.setoid
+
 instance myCircle.instTopologicalSpace :
   TopologicalSpace myCircle := instTopologicalSpaceQuotient
 
@@ -145,7 +252,12 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
           )
         ).uncurry-/
       continuous_toFun := by
-
+        simp only [continuous_iff_continuousAt, Prod.forall, f]
+        intro t
+        apply Quotient.ind
+        intro ⟨x₁,x₂⟩ U
+        simp only [Filter.mem_map]
+        intro hU_nhd
         sorry
         /-apply Continuous.comp₂ continuous_quotient_mk'
         · apply Continuous.subtype_mk --Hier liegt der Fehler
@@ -213,72 +325,204 @@ noncomputable def MobiusStrip_htpy_equiv_to_Circle :
   right_inv := by sorry
 -/
 
+end MobiusStrip_htpy_equiv_to_Circle
 end MobiusStrip
 
 section KleinBottle
 /--
+The unit square modulo
 (x,0) ∼ (1-x,1) and (0,y) ∼ (1,y)
 -/
 def KleinBottle.setoid : Setoid (I×I) where
-  r x y := x=y ∨
-    (((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)) ∧ x.1.val = 1 - y.1) ∨
-    (((x.1 = 0 ∧ y.1 = 1) ∨ (x.1 = 1 ∧ y.1 = 0)) ∧ x.2.val = y.2)
+  r x y :=
+    -- Equality
+    x=y ∨
+    -- Möbius relation
+    (((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)) ∧ (x.1 : ℝ) = 1 - y.1) ∨
+    -- Torus relation
+    (((x.1 = 0 ∧ y.1 = 1) ∨ (x.1 = 1 ∧ y.1 = 0)) ∧ x.2 = y.2) ∨
+    -- Vertical corners
+    ((x.1 = y.1 ∧ (x.1 = 0 ∨ x.1 = 1)) ∧ ((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)))
+
   iseqv := {
     refl x := by left;rfl
     symm {x} {y} := by
-      gcongr ?_ ∨ (?_ ∧ ?_) ∨ (?_ ∧ ?_)
+      gcongr ?_ ∨ (?_ ∧ ?_) ∨ (?_ ∧ ?_) ∨ (?_ ∧ ?_)
       · exact eq_comm.mp
       · simp only [and_comm, or_comm, imp_self]
       · simp only [eq_sub_iff_add_eq, add_comm, imp_self]
       · simp only [and_comm, or_comm, imp_self]
       · exact eq_comm.mp
-    trans {x} {y} {z} hxy hxz := by
-      rcases hxy with hx_eq_y | hxy | hxy
-      · simp only [hx_eq_y, hxz]
-      all_goals
-        rcases hxz with hx_eq_z | hxz
-        try simp [← hx_eq_z, hxy]
-      · rcases hxy with ⟨hxy1|hxy1,hxy2⟩
+      · intro h
+        simp only [← h.1, h.2, and_self]
+      · simp only [and_comm, or_comm, imp_self]
+    trans {x} {y} {z} hxy hyz := by
+      rcases hxy with hx_eq_y | hxy | hxy | hxy
+      · -- If x = y, it's clear
+        rw [hx_eq_y]
+        exact hyz
+      · -- If x ∼ y via Möbius relation, i.e.
+        -- (((x.2 = 0 ∧ y.2 = 1) ∨ (x.2 = 1 ∧ y.2 = 0)) ∧ (x.1 : ℝ) = 1 - y.1))
+        rcases hxy with ⟨⟨hx2,hy2⟩|⟨hx2,hy2⟩,hxy⟩
         all_goals
-          simp [hxy1] at hxz ⊢;
-          rw [hxy2, sub_right_inj]
-          rcases hxz with hxz | hxz
-          try
+          simp [hx2,hy2] at hyz ⊢;
+          rcases hyz with hy_eq_z | hyz | hyz | hyz
+          · -- If y = z, the Möbius relation from x ∼ y must transport to x ∼ z
+            right; left
+            simp [← hy_eq_z, hy2, hxy]
+          · -- If y ∼ z via Möbius relation
             left
             ext
-            rw [hxy2, hxz.2, sub_sub_cancel]
-            rw [hxz.1,hxy1.1]
-          right; left
-          try refine ⟨@Set.Icc.coe_eq_one.mp hxz.2.symm, ?_⟩
-          try refine ⟨@Set.Icc.coe_eq_zero.mp hxz.2.symm, ?_⟩
-
-          sorry
-      · rcases hxy with ⟨hxy1|hxy1,hxy2⟩
+            rw [hxy, hyz.2, sub_sub_cancel]
+            rw [hx2, hyz.1]
+          · -- If y ∼ z via torus relation
+            right; right; right
+            simp only [← hyz.2, and_true]
+            rcases hyz.1 with ⟨hy1,hz1⟩ | ⟨hy1,hz1⟩
+            · simp [hy1] at hxy
+              simp [hxy, hz1]
+            · simp [hy1] at hxy
+              simp [hxy, hz1]
+          · -- If y and z are vertical corners
+            right; right; left
+            simp only [hyz.2, and_true, ← hyz.1.1]
+            rcases hyz.1 with ⟨hyz1, hy1|hy1⟩
+            · right
+              simp only [hxy, hy1, Set.Icc.coe_zero, sub_zero,
+                Set.Icc.coe_eq_one.mp, Set.Icc.coe_one, and_self]
+            · left
+              simp only [hxy, hy1, Set.Icc.coe_one, sub_self,
+                Set.Icc.coe_eq_zero.mp, Set.Icc.coe_zero, and_self]
+      · -- If x ∼ y via torus relation, i.e.
+        -- (((x.1 = 0 ∧ y.1 = 1) ∨ (x.1 = 1 ∧ y.1 = 0)) ∧ x.2 = y.2)
+        rcases hxy with ⟨⟨hx2,hy2⟩|⟨hx2,hy2⟩,hxy⟩
         all_goals
-          simp [hxy1] at hxz ⊢;
-          try rw [hxy2, sub_right_inj]
-          rcases hxz with hxz | hxz | hxz
-          simp [← hxz, hxy1.2, and_self, hxy2]
+          simp [hx2,hy2] at hyz ⊢;
+          nth_rw 6 [eq_comm] at hyz
+          try rw [sub_eq_self] at hyz
           try
-            simp [← hxz.2]
-            have := Set.Icc.coe_eq_zero.mp (sub_eq_self.mp hxz.2.symm)
-            left; ext
-            simp [this, hxy1.1]
-            simp [hxy2]
-
-          try simp [hxz.1]
-          /-try {
-            left; ext
-            · rw [hxy2, hxz.2, sub_sub_cancel]
-            · rw [hxz.1,hxy1.1]
-            done
-          }-/
-
-          sorry
-          sorry
+            rw [sub_eq_zero] at hyz
+            nth_rw 6 [eq_comm] at hyz
+          rcases hyz with hy_eq_z | hyz | hyz | hyz
+          · -- If y = z, the torus relation from x ∼ y must transport to x ∼ z
+            right; right; left
+            simp [← hy_eq_z, hy2, hxy]
+          · -- If y ∼ z via Möbius relation
+            right; right; right
+            constructor
+            · ext; exact hyz.2.symm
+            rw [hxy]
+            exact hyz.1
+          · -- If y ∼ z via torus relation
+            left
+            rw [eq_comm, ← hx2, ← hxy] at hyz
+            exact Prod.ext_iff.mpr hyz
+          · -- If y and z are vertical corners
+            right; left
+            rw [hxy]
+            simp [hyz.2, ← hyz.1]
+      · -- If x and y are vertical corners
+        rcases hxy with ⟨⟨hxy1,hx1|hx1⟩,⟨hx2,hy2⟩|⟨hx2,hy2⟩⟩
+        all_goals
+          simp [hx2,hy2,hx1,← hxy1] at hyz ⊢;
+          nth_rw 3 [eq_comm] at hyz
+          try rw [sub_eq_self] at hyz
+          try
+            rw [sub_eq_zero] at hyz
+            nth_rw 3 [eq_comm] at hyz
+          rcases hyz with hy_eq_z | ⟨hz1,hz2⟩ | ⟨hz1,hz2⟩ | ⟨hz1,hz2⟩
+          · -- If y = z, the vertical corner relation from x ∼ y must transport to x ∼ z
+            right; right; right
+            simp [← hy_eq_z, hy2, ← hxy1, hx1]
+          · -- If y ∼ z via Möbius relation
+            right; right; left
+            simp [hz1]
+            ext
+            exact hz2
+          · -- If y ∼ z via torus relation
+            right; left
+            simp [hz1, ← hz2]
+          · -- If y and z are vertical corners
+            left
+            ext
+            · rw [hx1, ← hz1]
+            · rw [hx2, hz2]
   }
 def KleinBottle := Quotient KleinBottle.setoid
 instance KleinBottle.instTopologicalSpace :
   TopologicalSpace KleinBottle := instTopologicalSpaceQuotient
 
+section KleinBottle.embedding
+/--
+This creates an embedding of the Möbius strip into ℝ⁴ with a formula by
+https://math.stackexchange.com/questions/330856/how-to-embed-klein-bottle-into-r4
+and
+https://mathoverflow.net/questions/430183/topologically-embed-klein-bottle-into-mathbbr4-projecting-to-usual-beer-b
+-/
+noncomputable def KleinBottle.embedding.map : KleinBottle → ℝ×ℝ×ℝ×ℝ := Quotient.lift
+  (fun (u,t) ↦ (
+    (2 + cos (2*π*u)) * cos (2*π*t), -- 1st coordinate
+    (2 + cos (2*π*u)) * sin (2*π*t), -- 2nd coordinate
+    cos (π*t) * sin (2*π*u),         -- 3rd coordinate
+    sin (π*t) * sin (2*π*u)          -- 4th coordinate
+  ))
+  -- Well-definedness:
+  (by
+    intro ⟨a₁,b₁⟩ ⟨a₂,b₂⟩ h
+    simp only [setoid, ← Quotient.eq_iff_equiv, Quotient.eq, Prod.mk.injEq] at *
+    rcases h with ⟨ha,hb⟩ | ⟨hb,ha⟩ | ⟨ha,hb⟩ | ⟨⟨ha,ha₁⟩,hb⟩
+    · -- If (a₁,b₁) = (a₁,b₂)
+      simp only [hb, ha, and_self]
+    · -- If (a₁,b₁) ∼ (a₂,b₂) via the Möbius relation
+      rcases hb with ⟨hb₁,hb₂⟩ | ⟨hb₁,hb₂⟩
+      all_goals
+        simp [hb₁, hb₂, ha, mul_one_sub]
+    · -- If (a₁,b₁) ∼ (a₂,b₂) via the torus relation
+      rcases ha with ⟨ha₁,ha₂⟩ | ⟨ha₁,ha₂⟩
+      all_goals
+        simp [ha₁, ha₂, hb]
+    · -- If (a₁,b₁) ∼ (a₂,b₂) via the vertical corner relation
+      rcases ha₁ with ha₁ | ha₁
+      all_goals
+        rcases hb with ⟨hb₁,hb₂⟩ | ⟨hb₁,hb₂⟩
+        all_goals
+          simp [← ha, ha₁, hb₁, hb₂]
+
+  )
+lemma KleinBottle.embedding.injective : Function.Injective map := by sorry
+
+def KleinBottle.embedding : Set (ℝ×ℝ×ℝ×ℝ) := Set.range embedding.map
+
+instance KleinBottle.embedding.instTopologicalSpace :
+  TopologicalSpace KleinBottle.embedding := instTopologicalSpaceSubtype
+
+noncomputable def KleinBottle.embedding.equiv : KleinBottle ≃ₜ embedding := by
+  apply Homeomorph.mk (Equiv.ofInjective map injective) ?_ ?_
+  · -- map is continuous
+    apply Continuous.subtype_coind
+    apply Continuous.quotient_lift
+    simp only [continuous_prodMk]
+    constructor
+    · apply Continuous.mul ?_ (Continuous.comp' continuous_cos ?_)
+      · apply Continuous.add continuous_const (Continuous.comp' continuous_cos ?_)
+        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
+      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+    constructor
+    · apply Continuous.mul ?_ (Continuous.comp' continuous_sin ?_)
+      · apply Continuous.add continuous_const (Continuous.comp' continuous_cos ?_)
+        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
+      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+    constructor
+    all_goals
+      apply Continuous.mul ?_ (Continuous.comp' continuous_sin
+        (Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)))
+    · apply Continuous.comp' continuous_cos ?_
+      apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+    · apply Continuous.comp' continuous_sin ?_
+      apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+  · -- map⁻¹ is continuous
+    simp [Equiv.coe_ofInjective_symm]
+    sorry
+
+end KleinBottle.embedding
 end KleinBottle
