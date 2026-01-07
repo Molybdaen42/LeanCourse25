@@ -252,13 +252,24 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
           )
         ).uncurry-/
       continuous_toFun := by
-        simp only [continuous_iff_continuousAt, Prod.forall, f]
+        simp only [continuous_iff_continuousAt, Prod.forall]
         intro t
         apply Quotient.ind
-        intro ⟨x₁,x₂⟩ U
+        intro ⟨x₁,x₂⟩ V
+        --#check Setoid.ker_apply_mk_out
+        /-
         simp only [Filter.mem_map]
         intro hU_nhd
-        sorry
+        apply mem_nhds_iff.mp at hU_nhd
+        refine mem_nhds_prod_iff'.mpr ?_
+        -/
+        simp [Filter.mem_map, mem_nhds_iff]
+        intro U hU_subset_V hU_open h
+        by_cases hx : x₂ = 0 ∨ x₂ = 1
+        · sorry
+        · push_neg at hx
+
+          sorry
         /-apply Continuous.comp₂ continuous_quotient_mk'
         · apply Continuous.subtype_mk --Hier liegt der Fehler
           apply Continuous.add
@@ -283,7 +294,11 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       norm_num
       by_cases hy0 : y = 0
       · simp [hy0]
-        --have : MobiusStrip.setoid (⟦(x,0)⟧ : MobiusStrip).out (x,0) := Quotient.mk_out (x,0)
+        -- have : MobiusStrip.setoid (⟦(x,0)⟧ : MobiusStrip).out (x,0) := Quotient.mk_out (x,0)
+        -- have := MobiusStrip.setoid.ker_mk_eq
+        -- rw [Setoid.ker_apply_mk_out]
+        #check Setoid.ker_apply_mk_out
+
         --simp [Quotient.out, Quot.out]
         sorry
       by_cases hy1 : y = 1
