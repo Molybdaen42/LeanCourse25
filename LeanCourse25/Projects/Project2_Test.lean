@@ -15,6 +15,8 @@ instance I.instTopologicalSpace : TopologicalSpace I := instTopologicalSpaceSubt
 -- ToDo: Braucht man das? Muss man statt 1 lieber ⟨1,one_mem⟩ schreiben?
 abbrev I.zero_mem := unitInterval.zero_mem
 abbrev I.one_mem := unitInterval.one_mem
+lemma I.one_minus (x : I) : 1-x.val ∈ I :=
+  ⟨unitInterval.one_minus_nonneg x,unitInterval.one_minus_le_one x⟩
 
 section MobiusStrip
 /--
@@ -118,34 +120,26 @@ noncomputable def MobiusStrip.embedding.equiv : MobiusStrip ≃ₜ embedding := 
     apply Continuous.subtype_coind
     apply Continuous.quotient_lift
     simp only [continuous_prodMk]
-    constructor
-    · apply Continuous.mul (Continuous.comp' continuous_cos ?_)
-      · apply Continuous.add continuous_const
+    refine ⟨Continuous.mul (continuous_cos.comp' ?_) ?_,
+      Continuous.mul (continuous_sin.comp' ?_) ?_,
+      ?_⟩
+    all_goals
+      try
+        apply continuous_const.add
         apply Continuous.mul
         · apply Continuous.div_const
           apply Continuous.sub ?_ continuous_const
-          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
-        · apply Continuous.comp' continuous_cos ?_
+          apply continuous_const.mul continuous_fst.subtype_val
+        · apply continuous_cos.comp'
           apply Continuous.div_const
-          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-    constructor
-    · apply Continuous.mul (Continuous.comp' continuous_sin ?_)
-      · apply Continuous.add continuous_const
-        apply Continuous.mul
-        · apply Continuous.div_const
-          apply Continuous.sub ?_ continuous_const
-          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
-        · apply Continuous.comp' continuous_cos ?_
-          apply Continuous.div_const
-          apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-    · apply Continuous.mul ?_ (Continuous.comp' continuous_sin ?_)
-      · apply Continuous.div_const
-        apply Continuous.sub ?_ continuous_const
-        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
-      · apply Continuous.div_const
-        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+          apply continuous_const.mul continuous_snd.subtype_val
+      try apply continuous_const.mul continuous_snd.subtype_val
+    apply Continuous.mul ?_ (continuous_sin.comp' ?_)
+    · apply Continuous.div_const
+      apply Continuous.sub ?_ continuous_const
+      apply continuous_const.mul continuous_fst.subtype_val
+    · apply Continuous.div_const
+      apply continuous_const.mul continuous_snd.subtype_val
   · -- map⁻¹ is continuous
     sorry
 
@@ -196,7 +190,7 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       )
     continuous_toFun := by
       apply continuous_quot_lift
-      exact Continuous.comp continuous_quotient_mk' continuous_snd
+      exact continuous_quotient_mk'.comp continuous_snd
   }
   invFun := {
     toFun := Quotient.lift (fun x ↦ ⟦(⟨1/2,by simp; linarith⟩,x)⟧) (by
@@ -208,14 +202,14 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       )
     continuous_toFun := by
       apply continuous_quot_lift
-      apply Continuous.comp' continuous_quotient_mk'
+      apply continuous_quotient_mk'.comp'
       apply Continuous.prodMk_right
   }
   left_inv := by
     let f : I × I → I := fun (t,x) ↦
       ⟨(1-t)/2 + t*x, by
-        have ht1 : 0 ≤ 1-t.val := by exact unitInterval.one_minus_nonneg t
-        have ht2 : 1-t.val ≤ 1 := by exact unitInterval.one_minus_le_one t
+        have ht1 : 0 ≤ 1-t.val := unitInterval.one_minus_nonneg t
+        have ht2 : 1-t.val ≤ 1 := unitInterval.one_minus_le_one t
         have ⟨hx1,hx2⟩ := x.prop
         constructor
         · apply add_nonneg (by linarith)
@@ -268,7 +262,6 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
         by_cases hx : x₂ = 0 ∨ x₂ = 1
         · sorry
         · push_neg at hx
-
           sorry
         /-apply Continuous.comp₂ continuous_quotient_mk'
         · apply Continuous.subtype_mk --Hier liegt der Fehler
@@ -294,13 +287,42 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       norm_num
       by_cases hy0 : y = 0
       · simp [hy0]
-        -- have : MobiusStrip.setoid (⟦(x,0)⟧ : MobiusStrip).out (x,0) := Quotient.mk_out (x,0)
-        -- have := MobiusStrip.setoid.ker_mk_eq
-        -- rw [Setoid.ker_apply_mk_out]
-        #check Setoid.ker_apply_mk_out
 
-        --simp [Quotient.out, Quot.out]
-        sorry
+        have : (⟦(x,0)⟧ : MobiusStrip).out = (x,0) ∨ (⟦(x,0)⟧ : MobiusStrip).out =
+            (⟨1-x, I.one_minus x⟩, 1) := by
+
+          -- Wie kann man alle Elemente der Äquivalenzklasse von (x,0) aufzählen?
+          #check Set.range_quotient_mk
+          #check MobiusStrip.setoid
+
+          -- have : MobiusStrip.setoid (⟦(x,0)⟧ : MobiusStrip).out (x,0) := Quotient.mk_out (x,0)
+          #check MobiusStrip.setoid.ker_mk_eq
+          --rw [← Setoid.ker_apply_mk_out (x,0)]
+          #check Setoid.ker_apply_mk_out
+          /-
+          left
+          have : (x,(0:I)).2 = 0 := by simp
+          symm
+          nth_rw 1 [← this]
+          symm
+
+          apply Setoid.ker_apply_mk_out
+          -/
+
+          --simp [Quotient.out, Quot.out]
+          sorry
+
+        rcases this with h|h
+        · left
+          have : (x,(0:I)).2 = 0 := by simp
+          symm
+          nth_rw 1 [← this]
+          exact congrArg Prod.snd h.symm
+        · right
+          have : ((⟨1-x,I.one_minus x⟩, 1) : I×I).2 = 1 := by simp
+          symm
+          nth_rw 1 [← this]
+          exact congrArg Prod.snd h.symm
       by_cases hy1 : y = 1
       · simp [hy1]
         sorry
@@ -517,24 +539,22 @@ noncomputable def KleinBottle.embedding.equiv : KleinBottle ≃ₜ embedding := 
     apply Continuous.subtype_coind
     apply Continuous.quotient_lift
     simp only [continuous_prodMk]
-    constructor
-    · apply Continuous.mul ?_ (Continuous.comp' continuous_cos ?_)
-      · apply Continuous.add continuous_const (Continuous.comp' continuous_cos ?_)
-        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
-      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-    constructor
-    · apply Continuous.mul ?_ (Continuous.comp' continuous_sin ?_)
-      · apply Continuous.add continuous_const (Continuous.comp' continuous_cos ?_)
-        apply Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)
-      · apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-    constructor
+    refine ⟨Continuous.mul ?_ (continuous_cos.comp' ?_),
+      Continuous.mul ?_ (continuous_sin.comp' ?_),
+      ?_, ?_⟩
     all_goals
-      apply Continuous.mul ?_ (Continuous.comp' continuous_sin
-        (Continuous.mul continuous_const (Continuous.subtype_val continuous_fst)))
-    · apply Continuous.comp' continuous_cos ?_
-      apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
-    · apply Continuous.comp' continuous_sin ?_
-      apply Continuous.mul continuous_const (Continuous.subtype_val continuous_snd)
+      try
+        apply continuous_const.add (continuous_cos.comp' ?_)
+        apply continuous_const.mul continuous_fst.subtype_val
+      try
+        exact continuous_const.mul continuous_snd.subtype_val
+    all_goals
+      apply Continuous.mul ?_ (continuous_sin.comp'
+        (continuous_const.mul continuous_fst.subtype_val))
+    · apply continuous_cos.comp' ?_
+      apply continuous_const.mul continuous_snd.subtype_val
+    · apply continuous_sin.comp' ?_
+      apply continuous_const.mul continuous_snd.subtype_val
   · -- map⁻¹ is continuous
     simp [Equiv.coe_ofInjective_symm]
     sorry
