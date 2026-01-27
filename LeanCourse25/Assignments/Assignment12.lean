@@ -72,25 +72,53 @@ structure MyIso (X Y : C) where
 
 local infixr:10 (priority := high) " ≅ " => MyIso
 
-def MyIso.trans (f : X ≅ Y) (g : Y ≅ Z) : X ≅ Z := sorry
+def MyIso.trans (f : X ≅ Y) (g : Y ≅ Z) : X ≅ Z where
+  hom := f.hom ≫ g.hom
+  inv := g.inv ≫ f.inv
+  hom_inv_id := by
+    rw [← Category.assoc, Category.assoc f.hom, g.hom_inv_id,
+      Category.comp_id, f.hom_inv_id]
+  inv_hom_id := by
+    rw [← Category.assoc, Category.assoc g.inv, f.inv_hom_id,
+      Category.comp_id, g.inv_hom_id]
 
-def MyIso.symm (f : X ≅ Y) : Y ≅ X := sorry
+def MyIso.symm (f : X ≅ Y) : Y ≅ X where
+  hom := f.inv
+  inv := f.hom
+  hom_inv_id := f.inv_hom_id
+  inv_hom_id := f.hom_inv_id
 
-def MyIso.rfl : X ≅ X := sorry
+def MyIso.rfl : X ≅ X where
+  hom := 𝟙 X
+  inv := 𝟙 X
+  hom_inv_id := Category.comp_id (𝟙 X)
+  inv_hom_id := Category.comp_id (𝟙 X)
 
 /- hint: since we haven't marked `MyIso` with `@[ext]`, we cannot use the `ext` tactic here yet.
 Instead, do cases on both `f` and `f'`, and then `simp` will simplify the goal. -/
 @[ext]
 lemma MyIso.ext {f f' : X ≅ Y} (h : f.hom = f'.hom) : f = f' := by
-  sorry
+  rcases f with ⟨f.hom, f.inv, f.hom_inv_id, f.inv_hom_id⟩
+  rcases f' with ⟨f'.hom, f'.inv, f'.hom_inv_id, f'.inv_hom_id⟩
+  simp_all
+  rw [← Category.comp_id f.inv, ← f'.hom_inv_id, ← Category.assoc,
+    ← h, f.inv_hom_id, Category.id_comp]
   done
 
 
--- @[simps]
-def MyIso.map {X X' : C} (F : C ⥤ D) (f : X ≅ X') : F.obj X ≅ F.obj X' := sorry
+@[simps]
+def MyIso.map {X X' : C} (F : C ⥤ D) (f : X ≅ X') : F.obj X ≅ F.obj X' where
+  hom := F.map f.hom
+  inv := F.map f.inv
+  hom_inv_id := by sorry
+  inv_hom_id := by sorry
 
--- @[simps]
-def MyIso.prod {X X' : C} {Y Y' : D} (f : X ≅ X') (g : Y ≅ Y') : (X, Y) ≅ (X', Y') := sorry
+@[simps]
+def MyIso.prod {X X' : C} {Y Y' : D} (f : X ≅ X') (g : Y ≅ Y') : (X, Y) ≅ (X', Y') where
+  hom := (f.hom, g.hom)
+  inv := (f.inv, g.inv)
+  hom_inv_id := by simp [f.hom_inv_id,g.hom_inv_id]
+  inv_hom_id := by simp [f.inv_hom_id,g.inv_hom_id]
 
 /- Now show that isomorphisms in the product category are pairs of isomorphisms.
 The two functors below are already defined in Mathlib, and might be useful.
@@ -100,10 +128,19 @@ It will be useful to mark the definitions above as `simps`. This means that `(f.
 itself won't be.
 -/
 
-#check CategoryTheory.Prod.fst
+#check CategoryTheory.Prod.fst C D
 #check CategoryTheory.Prod.snd
 
-def prodIsoEquiv {X X' : C} {Y Y' : D} : ((X, Y) ≅ (X', Y')) ≃ (X ≅ X') × (Y ≅ Y') := sorry
+def prodIsoEquiv {X X' : C} {Y Y' : D} : ((X, Y) ≅ (X', Y')) ≃ (X ≅ X') × (Y ≅ Y') where
+  toFun F := (F.map (CategoryTheory.Prod.fst C D),
+              F.map (CategoryTheory.Prod.snd C D))
+  invFun G := G.1.prod G.2
+  left_inv G := by
+    ext
+    all_goals simp
+  right_inv F := by
+    ext
+    all_goals simp
 
 
 end Category

@@ -2,19 +2,12 @@ import Mathlib.Topology.Basic
 import Mathlib.RingTheory.Real.Irrational
 import Mathlib.Topology.Constructions
 import Mathlib.Topology.Homotopy.Equiv
-import Mathlib.Analysis.Complex.Circle
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
-open Topology Real
+open Topology Real unitInterval
 
-
-/--
-The unit interval with it's canonical topology.
+/-
+I is the unit interval with it's canonical topology.
 -/
-abbrev I := unitInterval
-instance I.instTopologicalSpace : TopologicalSpace I := instTopologicalSpaceSubtype
--- ToDo: Braucht man das? Muss man statt 1 lieber ⟨1,one_mem⟩ schreiben?
-abbrev I.zero_mem := unitInterval.zero_mem
-abbrev I.one_mem := unitInterval.one_mem
 lemma I.one_minus (x : I) : 1-x.val ∈ I :=
   ⟨unitInterval.one_minus_nonneg x,unitInterval.one_minus_le_one x⟩
 
@@ -57,6 +50,7 @@ This creates a Möbius strip with a width of 1,
 whose centre line coincides with the unit circle of the xy plane.
 The angle α has its apex at the centre;
 as it changes, the variation of r leads to the area that spans between the single edge.
+Source: Wikipedia
 -/
 noncomputable def MobiusStrip.embedding.map : MobiusStrip → ℝ×ℝ×ℝ := Quotient.lift
   (fun (a,b) ↦
@@ -88,7 +82,6 @@ lemma MobiusStrip.embedding.injective : Function.Injective map := by
   field_simp
   intro hx hy hz
   apply Quotient.eq.mpr
-  simp only [setoid] -- Can be removed (ToDo)
   by_cases h2 : a.2 = b.2
   · -- If a.2 = b.2, it follows that a = b
     left
@@ -110,11 +103,26 @@ lemma MobiusStrip.embedding.injective : Function.Injective map := by
     simp [hz] at hx
     exact hx
   · right
+    -- Here one would have to compute a lot of stuff
     sorry
 
+/--
+An embedding of the Möbius Strip into ℝ³.
+-/
 def MobiusStrip.embedding : Set (ℝ×ℝ×ℝ) := Set.range embedding.map
 
-noncomputable def MobiusStrip.embedding.equiv : MobiusStrip ≃ₜ embedding := by
+/--
+An isomorphism between the quotient MobiusStrip and it's embedding
+into ℝ³.
+-/
+noncomputable def MobiusStrip.embedding.isom : MobiusStrip ≃ embedding :=
+  Equiv.ofInjective map injective
+
+/--
+A homeomorphism between the quotient MobiusStrip and it's embedding
+into ℝ³.
+-/
+noncomputable def MobiusStrip.embedding.homeom : MobiusStrip ≃ₜ embedding := by
   apply Homeomorph.mk (Equiv.ofInjective map injective) ?_ ?_
   · -- map is continuous
     apply Continuous.subtype_coind
@@ -144,9 +152,11 @@ noncomputable def MobiusStrip.embedding.equiv : MobiusStrip ≃ₜ embedding := 
     sorry
 
 end MobiusStrip.embedding
+
+-- In this section we will show that the Möbius Strip is homotopy equivalent to the circle.
 section MobiusStrip_htpy_equiv_to_Circle
 
-def myCircle.setoid : Setoid I where
+def Circle.setoid : Setoid I where
   r x y := x=y ∨ (x=0 ∧ y=1) ∨ (x=1 ∧ y=0)
   iseqv := {
     refl x := by simp
@@ -164,25 +174,27 @@ def myCircle.setoid : Setoid I where
         assumption
   }
 
-def myCircle := Quotient myCircle.setoid
-
-instance myCircle.instTopologicalSpace :
-  TopologicalSpace myCircle := instTopologicalSpaceQuotient
-
-/-
--- ToDo
-def myCircle_is_circle : myCircle ≃ Circle := sorry
+/--
+The circle as a quotient of [0,1] by glueing together both endpoints.
 -/
+def Circle := Quotient Circle.setoid
 
-noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
-    ContinuousMap.HomotopyEquiv MobiusStrip myCircle where
+instance Circle.instTopologicalSpace :
+  TopologicalSpace Circle := instTopologicalSpaceQuotient
+
+/--
+The Möbius Strip is homotopy equivalent to the circle.
+ToDo: For future use it may be useful to change the proof to the mathlib notion of the circle in ℂ.
+-/
+noncomputable def MobiusStrip_htpy_equiv_to_Circle :
+    ContinuousMap.HomotopyEquiv MobiusStrip Circle where
   toFun := {
     /- The lifted map is ˋfun (x,y) ↦ ⟦y⟧ˋ.-/
     toFun := Quotient.lift (Quotient.mk'' ∘ Prod.snd) (by
       intro ⟨x,t⟩ ⟨y,s⟩
       simp only [← Quotient.eq_iff_equiv, Quotient.eq, MobiusStrip.setoid, Function.comp_apply]
       rw [Quotient.eq'']
-      simp only [myCircle.setoid]
+      simp only [Circle.setoid]
       gcongr
       · simp
       · intro h
@@ -197,7 +209,7 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       intro x y
       simp
       rw [Quotient.eq'', ← Quotient.eq_iff_equiv, Quotient.eq]
-      simp [myCircle.setoid, MobiusStrip.setoid]
+      simp [Circle.setoid, MobiusStrip.setoid]
       norm_num
       )
     continuous_toFun := by
@@ -339,29 +351,6 @@ noncomputable def MobiusStrip_htpy_equiv_to_myCircle :
       simp
     · exact fun x ↦ rfl
 
-/-
-noncomputable def e : myCircle ≃ Circle where
-  toFun x := Circle.exp (x.out*2*π)
-  invFun z := ⟦⟨((Complex.log z).im + π) / (2*π), by --Das +π ist sehr weird und wahrscheinlich falsch
-    apply unitInterval.div_mem
-    · linarith [Complex.neg_pi_lt_log_im z]
-    · linarith [pi_nonneg]
-    · linarith [Complex.log_im_le_pi z]
-    ⟩⟧
-  left_inv x := by
-    simp [Complex.log_im]
-    #check Complex.arg_exp_mul_I
-    sorry
-  right_inv := sorry
-
-noncomputable def MobiusStrip_htpy_equiv_to_Circle :
-    ContinuousMap.HomotopyEquiv MobiusStrip Circle where
-  toFun := sorry
-  invFun := sorry
-  left_inv := by sorry
-  right_inv := by sorry
--/
-
 end MobiusStrip_htpy_equiv_to_Circle
 end MobiusStrip
 
@@ -491,7 +480,7 @@ instance KleinBottle.instTopologicalSpace :
 
 section KleinBottle.embedding
 /--
-This creates an embedding of the Möbius strip into ℝ⁴ with a formula by
+This creates an embedding of the Klein bottle into ℝ⁴ with a formula by
 https://math.stackexchange.com/questions/330856/how-to-embed-klein-bottle-into-r4
 and
 https://mathoverflow.net/questions/430183/topologically-embed-klein-bottle-into-mathbbr4-projecting-to-usual-beer-b
@@ -528,12 +517,26 @@ noncomputable def KleinBottle.embedding.map : KleinBottle → ℝ×ℝ×ℝ×ℝ
   )
 lemma KleinBottle.embedding.injective : Function.Injective map := by sorry
 
+/--
+An embedding of the Klein bottle into ℝ⁴.
+-/
 def KleinBottle.embedding : Set (ℝ×ℝ×ℝ×ℝ) := Set.range embedding.map
 
 instance KleinBottle.embedding.instTopologicalSpace :
   TopologicalSpace KleinBottle.embedding := instTopologicalSpaceSubtype
 
-noncomputable def KleinBottle.embedding.equiv : KleinBottle ≃ₜ embedding := by
+/--
+An isomorphism between the quotient KleinBottle and it's embedding
+into ℝ⁴.
+-/
+noncomputable def KleinBottle.embedding.isom : KleinBottle ≃ embedding :=
+  Equiv.ofInjective map injective
+
+/--
+A homeomorphism between the quotient KleinBottle and it's embedding
+into ℝ⁴.
+-/
+noncomputable def KleinBottle.embedding.homeom : KleinBottle ≃ₜ embedding := by
   apply Homeomorph.mk (Equiv.ofInjective map injective) ?_ ?_
   · -- map is continuous
     apply Continuous.subtype_coind
